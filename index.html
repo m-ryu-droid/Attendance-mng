@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>勤怠管理 / Attendance</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f5f3; --surface: #ffffff; --surface2: #f0efea;
+      --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+      --text: #1a1a18; --text2: #6b6b66; --text3: #9e9e98;
+      --green: #1D9E75; --green-light: #E1F5EE;
+      --blue: #2563EB; --blue-light: #EFF6FF;
+      --orange: #EA580C; --orange-light: #FFF7ED;
+      --red: #DC2626; --red-light: #FEF2F2;
+      --purple: #7C3AED; --purple-light: #F5F3FF;
+      --gray: #9e9e98; --gray-light: #f0efea;
+      --radius: 14px; --radius-sm: 10px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a; --surface: #262624; --surface2: #2e2e2b;
+        --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+        --text: #f0efea; --text2: #a0a09a; --text3: #666662;
+        --green-light: #0a3328; --blue-light: #1e3a5f;
+        --orange-light: #3d1f0a; --red-light: #3d0a0a; --purple-light: #2d1f5e;
+        --gray-light: #2e2e2b;
+      }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 1rem;
+    }
+    .container { max-width: 480px; margin: 0 auto; }
+
+    /* ヘッダー */
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-top: 0.5rem; }
+    .header-center { text-align: center; flex: 1; }
+    .header h1 { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
+    .header .date { font-size: 13px; color: var(--text2); }
+
+    /* 言語切り替え */
+    .lang-toggle { display: flex; gap: 4px; }
+    .lang-btn { padding: 5px 10px; border-radius: 20px; border: 0.5px solid var(--border2); background: transparent; color: var(--text2); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .lang-btn.active { background: var(--green); color: white; border-color: var(--green); }
+
+    /* カード */
+    .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+    .card-title { font-size: 11px; font-weight: 600; color: var(--text2); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px; }
+
+    /* セレクト */
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 13px; color: var(--text2); font-weight: 500; }
+    select {
+      font-size: 16px; font-family: inherit;
+      padding: 10px 12px;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius-sm);
+      background: var(--surface); color: var(--text);
+      width: 100%; outline: none; transition: border-color 0.15s;
+    }
+    select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(29,158,117,0.15); }
+
+    /* ステップ表示 */
+    .step-bar { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 16px; }
+    .step { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .step-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border2); transition: background 0.3s; }
+    .step-dot.done { background: var(--green); }
+    .step-dot.active { background: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }
+    .step-label { font-size: 10px; color: var(--text3); }
+    .step-line { width: 28px; height: 1px; background: var(--border2); margin-bottom: 14px; }
+    .step-line.done { background: var(--green); }
+
+    /* ボタングリッド */
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn-action {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 6px; padding: 1.2rem 1rem;
+      border: none; border-radius: var(--radius-sm);
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: transform 0.1s, opacity 0.2s, filter 0.2s;
+      position: relative;
+    }
+    .btn-action:active:not(:disabled) { transform: scale(0.96); }
+    .btn-action .icon { font-size: 28px; transition: opacity 0.2s; }
+    .btn-action .time-badge { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 20px; background: rgba(255,255,255,0.4); }
+
+    /* 各ボタンの色 */
+    .btn-checkin  { background: var(--blue-light);   color: var(--blue); }
+    .btn-checkout { background: var(--red-light);    color: var(--red); }
+    .btn-break    { background: var(--orange-light); color: var(--orange); }
+    .btn-breakend { background: var(--purple-light); color: var(--purple); }
+
+    /* 無効状態 */
+    .btn-action:disabled {
+      background: var(--gray-light) !important;
+      color: var(--text3) !important;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .btn-action.done-state {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    /* 打刻状況 */
+    .status-bar { background: var(--surface2); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 1rem; display: none; }
+    .status-bar.show { display: block; }
+    .status-title { font-size: 11px; color: var(--text2); margin-bottom: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .status-item span { color: var(--text2); font-size: 11px; display: block; margin-bottom: 2px; }
+    .status-item strong { font-size: 15px; }
+
+    /* 送信中オーバーレイ */
+    .sending-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; align-items: center; justify-content: center; }
+    .sending-overlay.show { display: flex; }
+    .sending-box { background: var(--surface); border-radius: var(--radius); padding: 2rem 2.5rem; text-align: center; font-size: 15px; font-weight: 600; }
+
+    /* 確認モーダル */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: flex-end; justify-content: center; padding: 1rem; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; width: 100%; max-width: 420px; }
+    .modal-icon { font-size: 40px; text-align: center; margin-bottom: 12px; }
+    .modal-title { font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+    .modal-body { font-size: 14px; color: var(--text2); text-align: center; margin-bottom: 20px; line-height: 1.6; }
+    .modal-time { font-size: 28px; font-weight: 700; text-align: center; color: var(--red); margin-bottom: 20px; }
+    .modal-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .modal-cancel { padding: 12px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: transparent; color: var(--text2); font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .modal-confirm { padding: 12px; border: none; border-radius: var(--radius-sm); background: var(--red); color: white; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+    /* トースト */
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 11px 22px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; white-space: nowrap; }
+    .toast.ok { background: var(--green); color: white; }
+    .toast.ng { background: #e24b4a; color: white; }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div style="width:72px"></div>
+    <div class="header-center">
+      <h1>⏱ <span data-i18n="title">勤怠管理</span></h1>
+      <div class="date" id="today-date"></div>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('ja')">JA</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" data-i18n="selectStaff">スタッフ選択</div>
+    <div class="form-group">
+      <label data-i18n="name">名前</label>
+      <select id="sel-name" onchange="onNameChange()">
+        <option value="" data-i18n-opt="loading">読み込み中...</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" data-i18n="attendance">打刻</div>
+
+    <!-- ステップバー -->
+    <div class="step-bar">
+      <div class="step">
+        <div class="step-dot" id="step-checkin"></div>
+        <div class="step-label" data-i18n="stepIn">出勤</div>
+      </div>
+      <div class="step-line" id="line-break"></div>
+      <div class="step">
+        <div class="step-dot" id="step-break"></div>
+        <div class="step-label" data-i18n="stepBreak">休憩</div>
+      </div>
+      <div class="step-line" id="line-breakend"></div>
+      <div class="step">
+        <div class="step-dot" id="step-breakend"></div>
+        <div class="step-label" data-i18n="stepBreakEnd">休憩終了</div>
+      </div>
+      <div class="step-line" id="line-checkout"></div>
+      <div class="step">
+        <div class="step-dot" id="step-checkout"></div>
+        <div class="step-label" data-i18n="stepOut">退勤</div>
+      </div>
+    </div>
+
+    <div class="btn-grid">
+      <button class="btn-action btn-checkin" onclick="record('出勤')" id="btn-checkin" disabled>
+        <span class="icon">🟢</span>
+        <span data-i18n="checkin">出勤</span>
+        <span class="time-badge" id="time-checkin" data-i18n-default="未打刻">未打刻</span>
+      </button>
+      <button class="btn-action btn-checkout" onclick="confirmCheckout()" id="btn-checkout" disabled>
+        <span class="icon">🔴</span>
+        <span data-i18n="checkout">退勤</span>
+        <span class="time-badge" id="time-checkout" data-i18n-default="未打刻">未打刻</span>
+      </button>
+      <button class="btn-action btn-break" onclick="record('休憩開始')" id="btn-break" disabled>
+        <span class="icon">☕</span>
+        <span data-i18n="breakStart">休憩開始</span>
+        <span class="time-badge" id="time-break" data-i18n-default="未打刻">未打刻</span>
+      </button>
+      <button class="btn-action btn-breakend" onclick="record('休憩終了')" id="btn-breakend" disabled>
+        <span class="icon">✅</span>
+        <span data-i18n="breakEnd">休憩終了</span>
+        <span class="time-badge" id="time-breakend" data-i18n-default="未打刻">未打刻</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="status-bar" id="status-bar">
+    <div class="status-title" data-i18n="todayStatus">本日の打刻状況</div>
+    <div class="status-grid">
+      <div class="status-item"><span data-i18n="checkin">出勤</span><strong id="s-checkin">—</strong></div>
+      <div class="status-item"><span data-i18n="checkout">退勤</span><strong id="s-checkout">—</strong></div>
+      <div class="status-item"><span data-i18n="breakStart">休憩開始</span><strong id="s-break">—</strong></div>
+      <div class="status-item"><span data-i18n="breakEnd">休憩終了</span><strong id="s-breakend">—</strong></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 退勤確認モーダル -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-icon">🔴</div>
+    <div class="modal-title" data-i18n="modalTitle">退勤しますか？</div>
+    <div class="modal-body" data-i18n="modalBody">退勤を記録するとリセットされます。よろしいですか？</div>
+    <div class="modal-time" id="modal-time"></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()" data-i18n="cancel">キャンセル</button>
+      <button class="modal-confirm" onclick="doCheckout()" data-i18n="confirm">退勤する</button>
+    </div>
+  </div>
+</div>
+
+<div class="sending-overlay" id="sending-overlay">
+  <div class="sending-box">📡 <span data-i18n="sending">送信中...</span></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycby9xUt72-yNeyPjffH0YgjdQeKpZpEbcyJfnv3vbtkGvhRkhIlJTFpjpzmhnSJIMemdIg/exec';
+const STORAGE_KEY = 'kintai_v2';
+
+// 翻訳
+const i18n = {
+  ja: {
+    title: '勤怠管理', selectStaff: 'スタッフ選択', name: '名前',
+    attendance: '打刻', todayStatus: '本日の打刻状況',
+    checkin: '出勤', checkout: '退勤', breakStart: '休憩開始', breakEnd: '休憩終了',
+    stepIn: '出勤', stepBreak: '休憩', stepBreakEnd: '休憩終了', stepOut: '退勤',
+    notYet: '未打刻', loading: '読み込み中...', selectName: '選択してください',
+    modalTitle: '退勤しますか？',
+    modalBody: '退勤を記録するとデータがリセットされます。\nよろしいですか？',
+    cancel: 'キャンセル', confirm: '退勤する', sending: '送信中...',
+    toastCheckin: '出勤しました', toastBreak: '休憩開始しました',
+    toastBreakEnd: '休憩終了しました', toastCheckout: '退勤しました！お疲れ様でした 🎉',
+    toastFail: '送信失敗。もう一度押してください', toastNoName: '先に名前を選択してください',
+    loadFail: '読み込み失敗'
+  },
+  en: {
+    title: 'Attendance', selectStaff: 'Select Staff', name: 'Name',
+    attendance: 'Clock In/Out', todayStatus: "Today's Record",
+    checkin: 'Clock In', checkout: 'Clock Out', breakStart: 'Break Start', breakEnd: 'Break End',
+    stepIn: 'In', stepBreak: 'Break', stepBreakEnd: 'Back', stepOut: 'Out',
+    notYet: 'Not yet', loading: 'Loading...', selectName: 'Select name',
+    modalTitle: 'Clock Out?',
+    modalBody: 'This will record your clock-out time and reset the form.',
+    cancel: 'Cancel', confirm: 'Clock Out', sending: 'Sending...',
+    toastCheckin: 'Clocked in!', toastBreak: 'Break started!',
+    toastBreakEnd: 'Break ended!', toastCheckout: 'Clocked out! Good work today 🎉',
+    toastFail: 'Failed. Please try again.', toastNoName: 'Please select your name first.',
+    loadFail: 'Load failed'
+  }
+};
+
+let lang = localStorage.getItem('lang') || 'ja';
+let times = { '出勤': null, '退勤': null, '休憩開始': null, '休憩終了': null };
+let savedName = '';
+
+// 日付
+const now = new Date();
+const dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+const weeks = { ja: ['日','月','火','水','木','金','土'], en: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] };
+
+function updateDateLabel() {
+  if (lang === 'ja') {
+    document.getElementById('today-date').textContent =
+      now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日（' + weeks.ja[now.getDay()] + '）';
+  } else {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    document.getElementById('today-date').textContent =
+      weeks.en[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+  }
+}
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem('lang', l);
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  applyTranslations();
+  updateDateLabel();
+}
+
+function applyTranslations() {
+  const t = i18n[lang];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (t[key]) el.textContent = t[key];
+  });
+  // 未打刻の表示
+  ['time-checkin','time-checkout','time-break','time-breakend'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.dataset.recorded) el.textContent = t.notYet;
+  });
+  // セレクトのプレースホルダー
+  const sel = document.getElementById('sel-name');
+  if (sel && sel.options[0] && !sel.options[0].value) {
+    sel.options[0].textContent = savedName ? '' : t.selectName;
+  }
+}
+
+// ローカルストレージから復元
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.date !== dateStr) { localStorage.removeItem(STORAGE_KEY); return; }
+    times = saved.times;
+    savedName = saved.name || '';
+    updateButtonStates();
+    updateStatusUI();
+  } catch(e) {}
+}
+
+function saveToStorage() {
+  const name = document.getElementById('sel-name').value;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: dateStr, name, times }));
+}
+
+function clearStorage() { localStorage.removeItem(STORAGE_KEY); }
+
+// ボタンの有効・無効を状態で制御
+function updateButtonStates() {
+  const hasName = !!document.getElementById('sel-name').value;
+  const checkedIn  = !!times['出勤'];
+  const breakStarted = !!times['休憩開始'];
+  const breakEnded = !!times['休憩終了'];
+  const checkedOut = !!times['退勤'];
+
+  const btnCheckin  = document.getElementById('btn-checkin');
+  const btnCheckout = document.getElementById('btn-checkout');
+  const btnBreak    = document.getElementById('btn-break');
+  const btnBreakend = document.getElementById('btn-breakend');
+
+  // 出勤：名前選択済み かつ 未出勤
+  btnCheckin.disabled  = !hasName || checkedIn;
+  // 退勤：出勤済みであればOK（休憩なしでも押せる）
+  btnCheckout.disabled = !checkedIn || checkedOut;
+  // 休憩開始：出勤済み かつ 未休憩開始
+  btnBreak.disabled    = !checkedIn || breakStarted;
+  // 休憩終了：休憩開始済み かつ 未休憩終了 かつ 未退勤
+  btnBreakend.disabled = !breakStarted || breakEnded || checkedOut;
+
+  // done-stateで視覚的に完了表示
+  if (checkedIn)    { btnCheckin.classList.add('done-state');  btnCheckin.disabled = true; }
+  if (checkedOut)   { btnCheckout.classList.add('done-state'); btnCheckout.disabled = true; }
+  if (breakStarted) { btnBreak.classList.add('done-state');    btnBreak.disabled = true; }
+  if (breakEnded)   { btnBreakend.classList.add('done-state'); btnBreakend.disabled = true; }
+
+  // ステップドット更新
+  updateSteps(checkedIn, breakStarted, breakEnded, checkedOut);
+}
+
+function updateSteps(checkedIn, breakStarted, breakEnded, checkedOut) {
+  const set = (id, state) => {
+    const el = document.getElementById(id);
+    el.classList.remove('done','active');
+    if (state === 'done') el.classList.add('done');
+    if (state === 'active') el.classList.add('active');
+  };
+  const setLine = (id, done) => { document.getElementById(id).classList.toggle('done', done); };
+
+  set('step-checkin',  checkedIn ? 'done' : 'active');
+  set('step-break',    breakStarted ? 'done' : (checkedIn ? 'active' : ''));
+  set('step-breakend', breakEnded ? 'done' : (breakStarted ? 'active' : ''));
+  set('step-checkout', checkedOut ? 'done' : (checkedIn ? 'active' : ''));
+  setLine('line-break',    checkedIn);
+  setLine('line-breakend', breakStarted);
+  setLine('line-checkout', checkedIn);
+}
+
+function updateStatusUI() {
+  const t = i18n[lang];
+  const map = { '出勤': ['time-checkin','s-checkin'], '退勤': ['time-checkout','s-checkout'], '休憩開始': ['time-break','s-break'], '休憩終了': ['time-breakend','s-breakend'] };
+  let hasAny = false;
+  Object.entries(map).forEach(([type, [timeId, statusId]]) => {
+    const val = times[type];
+    const timeEl = document.getElementById(timeId);
+    if (val) {
+      timeEl.textContent = val;
+      timeEl.dataset.recorded = '1';
+      document.getElementById(statusId).textContent = val;
+      hasAny = true;
+    } else {
+      timeEl.textContent = t.notYet;
+      delete timeEl.dataset.recorded;
+      document.getElementById(statusId).textContent = '—';
+    }
+  });
+  document.getElementById('status-bar').classList.toggle('show', hasAny);
+}
+
+function onNameChange() { updateButtonStates(); saveToStorage(); }
+
+function getNow() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+async function record(type) {
+  const t = getNow();
+  times[type] = t;
+  saveToStorage();
+  updateButtonStates();
+  updateStatusUI();
+  const toastMap = { '出勤': 'toastCheckin', '休憩開始': 'toastBreak', '休憩終了': 'toastBreakEnd' };
+  showToast(i18n[lang][toastMap[type]] + '  ' + t, 'ok');
+  await sendToGAS();
+}
+
+function confirmCheckout() {
+  document.getElementById('modal-time').textContent = getNow();
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+async function doCheckout() {
+  closeModal();
+  const t = getNow();
+  times['退勤'] = t;
+  document.getElementById('sending-overlay').classList.add('show');
+
+  try {
+    await sendToGAS();
+    document.getElementById('sending-overlay').classList.remove('show');
+    updateButtonStates();
+    updateStatusUI();
+    showToast(i18n[lang].toastCheckout, 'ok');
+    setTimeout(() => resetAll(), 2500);
+  } catch(e) {
+    document.getElementById('sending-overlay').classList.remove('show');
+    times['退勤'] = null;
+    showToast(i18n[lang].toastFail, 'ng');
+  }
+}
+
+async function sendToGAS() {
+  const name = document.getElementById('sel-name').value;
+  await fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({
+      date: dateStr, name,
+      checkin:    times['出勤']    || '',
+      checkout:   times['退勤']    || '',
+      breakstart: times['休憩開始'] || '',
+      breakend:   times['休憩終了'] || ''
+    })
+  });
+}
+
+function resetAll() {
+  times = { '出勤': null, '退勤': null, '休憩開始': null, '休憩終了': null };
+  clearStorage();
+  document.getElementById('sel-name').value = '';
+  updateButtonStates();
+  updateStatusUI();
+}
+
+async function loadNames() {
+  try {
+    const res = await fetch(GAS_URL);
+    const data = await res.json();
+    const sel = document.getElementById('sel-name');
+    sel.innerHTML = '<option value="">' + i18n[lang].selectName + '</option>';
+    data.names.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name; opt.textContent = name;
+      sel.appendChild(opt);
+    });
+    if (savedName) { sel.value = savedName; }
+  } catch(e) {
+    document.getElementById('sel-name').innerHTML = '<option value="">' + i18n[lang].loadFail + '</option>';
+  }
+  updateButtonStates();
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// 初期化
+loadFromStorage();
+applyTranslations();
+updateDateLabel();
+loadNames();
+document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === lang.toUpperCase()));
+</script>
+</body>
+</html>
