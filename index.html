@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>勤怠管理 / Attendance</title>
+  <title>勤怠管理。 / Attendance</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -424,17 +424,41 @@ function getNow() {
   return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 }
 
-// --- HTML側の修正イメージ ---
+// 出勤の時だけ即座に送る。休憩はスマホ保存のみ。
 async function record(type) {
   const t = getNow();
   times[type] = t;
-  
   saveToStorage();
   updateButtonStates();
   updateStatusUI();
-  
-  // ★ここ！これが入っていないと、GASにデータが飛びません！
-  await sendToGAS(); 
+
+  // 「出勤」の時だけGASに送る（これでスプシに1行目が作られる）
+  if (type === '出勤') {
+    await sendToGAS();
+    showToast(i18n[lang].toastCheckin + ' ' + t, 'ok');
+  } else {
+    // 休憩開始・終了はトーストのみ
+    const toastKey = type === '休憩開始' ? 'toastBreak' : 'toastBreakEnd';
+    showToast(i18n[lang][toastKey] + ' ' + t, 'ok');
+  }
+}
+
+// 退勤時は「すべての打刻データ」をまとめて送り、行を完成させる
+async function doCheckout() {
+  closeModal();
+  const t = getNow();
+  times['退勤'] = t;
+  document.getElementById('sending-overlay').classList.add('show');
+
+  try {
+    await sendToGAS(); // 休憩時間も含めて全データ送信
+    document.getElementById('sending-overlay').classList.remove('show');
+    showToast(i18n[lang].toastCheckout, 'ok');
+    setTimeout(() => resetAll(), 2500);
+  } catch(e) {
+    document.getElementById('sending-overlay').classList.remove('show');
+    showToast(i18n[lang].toastFail, 'ng');
+  }
 }
 
 function confirmCheckout() {
