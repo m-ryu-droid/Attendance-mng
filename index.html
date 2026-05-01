@@ -466,18 +466,30 @@ async function doCheckout() {
 
 async function sendToGAS() {
   const name = document.getElementById('sel-name').value;
-  await fetch(GAS_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    body: JSON.stringify({
-      date: dateStr,
-      name: name,
-      checkin:    times['出勤']    || '',
-      checkout:   times['退勤']    || '',
-      breakstart: times['休憩開始'] || '',
-      breakend:   times['休憩終了'] || ''
-    })
-  });
+  
+  // GASが解析しやすい「平らな」データ構造にします
+  const payload = {
+    date: dateStr,
+    name: name,
+    checkin:    times['出勤']    || '',
+    checkout:   times['退勤']    || '',
+    breakstart: times['休憩開始'] || '',
+    breakend:   times['休憩終了'] || ''
+  };
+
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors', // これによりエラーが見えにくいですが、通信は飛びます
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    console.log("GASへの送信命令を出しました:", payload);
+  } catch (e) {
+    console.error("送信エラー:", e);
+  }
 }
 
 function resetAll() {
