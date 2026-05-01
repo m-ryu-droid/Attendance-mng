@@ -424,15 +424,17 @@ function getNow() {
   return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 }
 
+// --- HTML側の修正イメージ ---
 async function record(type) {
   const t = getNow();
   times[type] = t;
+  
   saveToStorage();
   updateButtonStates();
   updateStatusUI();
-  const toastMap = { '出勤': 'toastCheckin', '休憩開始': 'toastBreak', '休憩終了': 'toastBreakEnd' };
-  showToast(i18n[lang][toastMap[type]] + '  ' + t, 'ok');
-  await sendToGAS();
+  
+  // ★ここ！これが入っていないと、GASにデータが飛びません！
+  await sendToGAS(); 
 }
 
 function confirmCheckout() {
