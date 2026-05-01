@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>勤怠管理 / Attendance</title>
+  <title>勤怠管理！ / Attendance</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -464,16 +464,18 @@ async function doCheckout() {
 
 async function sendToGAS() {
   const name = document.getElementById('sel-name').value;
-  const params = new URLSearchParams({
-    action: 'record',
-    date: dateStr,
-    name: name,
-    checkin:    times['出勤']    || '',
-    checkout:   times['退勤']    || '',
-    breakstart: times['休憩開始'] || '',
-    breakend:   times['休憩終了'] || ''
+  await fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({
+      date: dateStr,
+      name: name,
+      checkin:    times['出勤']    || '',
+      checkout:   times['退勤']    || '',
+      breakstart: times['休憩開始'] || '',
+      breakend:   times['休憩終了'] || ''
+    })
   });
-  await fetch(GAS_URL + '?' + params.toString());
 }
 
 function resetAll() {
