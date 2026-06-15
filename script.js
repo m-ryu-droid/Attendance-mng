@@ -13,6 +13,7 @@ const i18n = {
   ja: {
     title: '勤怠管理', selectStaff: 'スタッフ選択', name: '名前',
     attendance: '打刻', todayStatus: '本日の打刻状況',
+    currentStatus: '現在の状態', nextAction: '次の操作',
     checkin: '出勤', checkout: '退勤', breakStart: '休憩開始', breakEnd: '休憩終了',
     stepIn: '出勤', stepBreak: '休憩', stepBreakEnd: '休憩終了', stepOut: '退勤',
     notYet: '未打刻', loading: '読み込み中...', selectName: '選択してください',
@@ -28,6 +29,7 @@ const i18n = {
   en: {
     title: 'Attendance', selectStaff: 'Select Staff', name: 'Name',
     attendance: 'Clock In/Out', todayStatus: "Today's Record",
+    currentStatus: 'Current Status', nextAction: 'Next Action',
     checkin: 'Clock In', checkout: 'Clock Out', breakStart: 'Break Start', breakEnd: 'Break End',
     stepIn: 'In', stepBreak: 'Break', stepBreakEnd: 'Back', stepOut: 'Out',
     notYet: 'Not yet', loading: 'Loading...', selectName: 'Select name',
@@ -138,6 +140,95 @@ function updateButtonStates() {
   if (breakEnded) { btnBreakend.classList.add('done-state'); btnBreakend.disabled = true; }
 
   updateSteps(checkedIn, breakStarted, breakEnded, checkedOut);
+  updatePrimaryAction(hasName, checkedIn, breakStarted, breakEnded, checkedOut);
+}
+
+function updatePrimaryAction(hasName, checkedIn, breakStarted, breakEnded, checkedOut) {
+  const stateEl = document.getElementById('current-state');
+  const detailEl = document.getElementById('state-detail');
+  const primary = document.getElementById('primary-action');
+  const label = document.getElementById('primary-label');
+  const time = document.getElementById('primary-time');
+  const next = getNextAction(hasName, checkedIn, breakStarted, breakEnded, checkedOut);
+
+  primary.classList.remove('is-break', 'is-breakend', 'is-checkout');
+  primary.disabled = !next.type;
+  primary.onclick = next.handler;
+  label.textContent = next.label;
+  time.textContent = next.time || getNow();
+
+  if (next.className) primary.classList.add(next.className);
+
+  stateEl.textContent = next.state;
+  detailEl.textContent = next.detail;
+}
+
+function getNextAction(hasName, checkedIn, breakStarted, breakEnded, checkedOut) {
+  const t = i18n[lang];
+  const selectedName = document.getElementById('sel-name').value;
+
+  if (!hasName) {
+    return {
+      type: '',
+      label: t.checkin,
+      state: lang === 'ja' ? '出勤前' : 'Before Work',
+      detail: lang === 'ja' ? '名前を選択してください' : 'Select your name'
+    };
+  }
+
+  if (checkedOut) {
+    return {
+      type: '',
+      label: t.checkout,
+      time: times['退勤'],
+      state: lang === 'ja' ? '退勤済み' : 'Clocked Out',
+      detail: selectedName + ' / ' + (times['退勤'] || t.notYet)
+    };
+  }
+
+  if (!checkedIn) {
+    return {
+      type: '出勤',
+      label: t.checkin,
+      state: lang === 'ja' ? '出勤前' : 'Before Work',
+      detail: selectedName + ' / ' + (lang === 'ja' ? '出勤できます' : 'Ready to clock in'),
+      handler: () => record('出勤')
+    };
+  }
+
+  if (!breakStarted) {
+    return {
+      type: '休憩開始',
+      label: t.breakStart,
+      time: times['出勤'],
+      state: lang === 'ja' ? '勤務中' : 'Working',
+      detail: selectedName + ' / ' + t.checkin + ' ' + times['出勤'],
+      className: 'is-break',
+      handler: () => record('休憩開始')
+    };
+  }
+
+  if (!breakEnded) {
+    return {
+      type: '休憩終了',
+      label: t.breakEnd,
+      time: times['休憩開始'],
+      state: lang === 'ja' ? '休憩中' : 'On Break',
+      detail: selectedName + ' / ' + t.breakStart + ' ' + times['休憩開始'],
+      className: 'is-breakend',
+      handler: () => record('休憩終了')
+    };
+  }
+
+  return {
+    type: '退勤',
+    label: t.checkout,
+    time: times['休憩終了'] || times['出勤'],
+    state: lang === 'ja' ? '勤務中' : 'Working',
+    detail: selectedName + ' / ' + (lang === 'ja' ? '退勤できます' : 'Ready to clock out'),
+    className: 'is-checkout',
+    handler: () => confirmCheckout()
+  };
 }
 
 function updateSteps(checkedIn, breakStarted, breakEnded, checkedOut) {
@@ -181,7 +272,7 @@ function updateStatusUI() {
       document.getElementById(statusId).textContent = '—';
     }
   });
-  document.getElementById('status-bar').classList.toggle('show', hasAny);
+  document.getElementById('status-bar').classList.toggle('show', true);
 }
 
 function onNameChange() {
