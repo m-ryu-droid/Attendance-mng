@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>勤怠管理 / Attendance</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260615-4" />
 </head>
 <body>
 <div class="container">
@@ -45,7 +45,8 @@
   </div>
 
   <div class="card action-card">
-    <div class="card-title" data-i18n="attendance">打刻</div>
+    <div class="card-title">選べる操作</div>
+    <p class="action-hint">明るく表示されているボタンが今押せる操作です。</p>
 
     <div class="step-bar">
       <div class="step">
@@ -69,7 +70,7 @@
       </div>
     </div>
 
-    <div class="btn-grid secondary-actions">
+    <div class="btn-grid secondary-actions" aria-label="打刻操作">
       <button class="btn-action btn-checkin" onclick="record('出勤')" id="btn-checkin" disabled>
         <span class="icon">🟢</span>
         <span data-i18n="checkin">出勤</span>
@@ -122,6 +123,6 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="script.js?v=20260615-3"></script>
+<script src="script.js?v=20260615-4"></script>
 </body>
 </html>
