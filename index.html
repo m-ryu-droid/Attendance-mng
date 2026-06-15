@@ -31,7 +31,20 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="state-panel">
+    <div class="state-copy">
+      <span class="state-label" data-i18n="currentStatus">現在の状態</span>
+      <strong id="current-state">出勤前</strong>
+      <span id="state-detail">名前を選択してください</span>
+    </div>
+    <button class="primary-action" id="primary-action" type="button" disabled>
+      <span class="primary-kicker" data-i18n="nextAction">次の操作</span>
+      <span class="primary-label" id="primary-label">出勤</span>
+      <span class="primary-time" id="primary-time">--:--</span>
+    </button>
+  </div>
+
+  <div class="card action-card">
     <div class="card-title" data-i18n="attendance">打刻</div>
 
     <div class="step-bar">
@@ -56,7 +69,7 @@
       </div>
     </div>
 
-    <div class="btn-grid">
+    <div class="btn-grid secondary-actions">
       <button class="btn-action btn-checkin" onclick="record('出勤')" id="btn-checkin" disabled>
         <span class="icon">🟢</span>
         <span data-i18n="checkin">出勤</span>
@@ -80,7 +93,7 @@
     </div>
   </div>
 
-  <div class="status-bar" id="status-bar">
+  <div class="status-bar show" id="status-bar">
     <div class="status-title" data-i18n="todayStatus">本日の打刻状況</div>
     <div class="status-grid">
       <div class="status-item"><span data-i18n="checkin">出勤</span><strong id="s-checkin">—</strong></div>
@@ -109,6 +122,6 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="script.js?v=20260615-2"></script>
+<script src="script.js?v=20260615-3"></script>
 </body>
 </html>
