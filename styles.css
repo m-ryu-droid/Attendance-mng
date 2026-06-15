@@ -44,6 +44,7 @@ body {
 label { font-size: 13px; color: var(--text2); font-weight: 500; }
 select { font-size: 16px; font-family: inherit; padding: 10px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); width: 100%; outline: none; transition: border-color 0.15s; }
 select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(29,158,117,0.15); }
+.notice { color: var(--text2); font-size: 12px; line-height: 1.5; }
 .step-bar { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 16px; }
 .step { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .step-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border2); transition: background 0.3s; }
