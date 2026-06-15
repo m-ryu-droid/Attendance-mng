@@ -4,9 +4,7 @@ const NAME_SHEET_GID = '0';
 const STORAGE_KEY = 'kintai_v2';
 const DEFAULT_NAME_KEY = 'kintai_default_name_v1';
 const FALLBACK_NAMES = [
-  '奥田ロレーン',
-  '尾棹大朗',
-  'ルイ・ワイチェック'
+  ''
 ];
 
 const i18n = {
