@@ -439,7 +439,7 @@ function getNow() {
   return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 }
 
-// 出勤の時だけ即座に送る。休憩はスマホ保存のみ。
+// 各打刻でGASに送る。GAS側でSlack通知し、退勤時だけスプレッドシートへ確定記入します。
 async function record(type) {
   const t = getNow();
   times[type] = t;
@@ -447,14 +447,16 @@ async function record(type) {
   updateButtonStates();
   updateStatusUI();
 
-  // 「出勤」の時だけGASに送る（これでスプシに1行目が作られる）
-  if (type === '出勤') {
-    await sendToGAS();
-    showToast(i18n[lang].toastCheckin + ' ' + t, 'ok');
-  } else {
-    // 休憩開始・終了はトーストのみ
-    const toastKey = type === '休憩開始' ? 'toastBreak' : 'toastBreakEnd';
-    showToast(i18n[lang][toastKey] + ' ' + t, 'ok');
+  try {
+    await sendToGAS(type);
+    if (type === '出勤') {
+      showToast(i18n[lang].toastCheckin + ' ' + t, 'ok');
+    } else {
+      const toastKey = type === '休憩開始' ? 'toastBreak' : 'toastBreakEnd';
+      showToast(i18n[lang][toastKey] + ' ' + t, 'ok');
+    }
+  } catch (e) {
+    showToast(i18n[lang].toastFail, 'ng');
   }
 }
 
@@ -472,7 +474,7 @@ async function doCheckout() {
   document.getElementById('sending-overlay').classList.add('show');
 
   try {
-    await sendToGAS();
+    await sendToGAS('退勤');
     document.getElementById('sending-overlay').classList.remove('show');
     updateButtonStates();
     updateStatusUI();
@@ -485,11 +487,12 @@ async function doCheckout() {
   }
 }
 
-async function sendToGAS() {
+async function sendToGAS(type) {
   const name = document.getElementById('sel-name').value;
   
   // GASが解析しやすい「平らな」データ構造にします
   const payload = {
+    type: type,
     date: dateStr,
     name: name,
     checkin:    times['出勤']    || '',
@@ -510,6 +513,7 @@ async function sendToGAS() {
     console.log("GASへの送信命令を出しました:", payload);
   } catch (e) {
     console.error("送信エラー:", e);
+    throw e;
   }
 }
 
@@ -523,9 +527,7 @@ function resetAll() {
 
 async function loadNames() {
   try {
-    const res = await fetch(GAS_URL);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
+    const data = await fetchNamesJsonp();
     if (!data.names || !Array.isArray(data.names)) throw new Error('Invalid names response');
     const sel = document.getElementById('sel-name');
     sel.innerHTML = '<option value="">' + i18n[lang].selectName + '</option>';
@@ -540,6 +542,37 @@ async function loadNames() {
     document.getElementById('sel-name').innerHTML = '<option value="">' + i18n[lang].loadFail + '</option>';
   }
   updateButtonStates();
+}
+
+function fetchNamesJsonp() {
+  return new Promise((resolve, reject) => {
+    const callbackName = 'loadKintaiNames_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    const sep = GAS_URL.includes('?') ? '&' : '?';
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('Names request timeout'));
+    }, 12000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[callbackName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[callbackName] = data => {
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('Names request failed'));
+    };
+
+    script.src = GAS_URL + sep + 'callback=' + encodeURIComponent(callbackName);
+    document.head.appendChild(script);
+  });
 }
 
 function showToast(msg, type) {
