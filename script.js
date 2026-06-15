@@ -1,4 +1,6 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwLP7Z0wAGkN0vMxwjF3dDvxgnrVGoEab7J_EWJ-KZ0vLHa3mqHWzhPiXengjOfOEFX/exec';
+const NAME_SPREADSHEET_ID = '1JL_cyEa06mZnyj3Ar-Ie5sbL-QxxSm2X5fHlWKCrWog';
+const NAME_SHEET_GID = '0';
 const STORAGE_KEY = 'kintai_v2';
 const DEFAULT_NAME_KEY = 'kintai_default_name_v1';
 const FALLBACK_NAMES = [
@@ -311,12 +313,23 @@ function resetAll() {
 
 async function loadNames() {
   try {
-    const data = await fetchNamesJsonp();
-    if (!data.names || !Array.isArray(data.names)) throw new Error('Invalid names response');
+    const data = await fetchNamesFromPublicSheet();
+    if (!data.names || !Array.isArray(data.names) || data.names.length === 0) {
+      throw new Error('No names in public sheet response');
+    }
     renderNameOptions(data.names);
   } catch (e) {
-    console.error('名前一覧の読み込みに失敗しました:', e);
-    renderNameOptions(FALLBACK_NAMES);
+    console.warn('公開名前シートからの読み込みに失敗しました。GAS経由を試します:', e);
+    try {
+      const data = await fetchNamesJsonp();
+      if (!data.names || !Array.isArray(data.names) || data.names.length === 0) {
+        throw new Error('No names in GAS response');
+      }
+      renderNameOptions(data.names);
+    } catch (gasError) {
+      console.error('名前一覧の読み込みに失敗しました:', gasError);
+      renderNameOptions(FALLBACK_NAMES);
+    }
   }
   updateButtonStates();
 }
@@ -331,6 +344,77 @@ function renderNameOptions(names) {
     sel.appendChild(opt);
   });
   if (savedName && names.includes(savedName)) sel.value = savedName;
+}
+
+function fetchNamesFromPublicSheet() {
+  return new Promise((resolve, reject) => {
+    const callbackName = 'loadPublicKintaiNames_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    const previousGoogle = window.google;
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('Public sheet request timeout'));
+    }, 12000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[callbackName];
+      if (previousGoogle === undefined) {
+        delete window.google;
+      } else {
+        window.google = previousGoogle;
+      }
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[callbackName] = response => {
+      cleanup();
+      try {
+        resolve({ names: parseNamesFromGvizResponse(response) });
+      } catch (e) {
+        reject(e);
+      }
+    };
+
+    window.google = window.google || {};
+    window.google.visualization = window.google.visualization || {};
+    window.google.visualization.Query = window.google.visualization.Query || {};
+    window.google.visualization.Query.setResponse = window[callbackName];
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('Public sheet request failed'));
+    };
+
+    const params = new URLSearchParams({
+      tqx: 'out:json;responseHandler:' + callbackName,
+      gid: NAME_SHEET_GID,
+      _: Date.now().toString()
+    });
+    script.src = 'https://docs.google.com/spreadsheets/d/' + NAME_SPREADSHEET_ID + '/gviz/tq?' + params.toString();
+    document.head.appendChild(script);
+  });
+}
+
+function parseNamesFromGvizResponse(response) {
+  const rows = response && response.table && response.table.rows ? response.table.rows : [];
+  const names = rows
+    .map(row => {
+      const cells = row.c || [];
+      return {
+        name: String((cells[0] && (cells[0].v || cells[0].f)) || '').trim(),
+        status: String((cells[2] && (cells[2].v || cells[2].f)) || '').trim()
+      };
+    })
+    .filter(row =>
+      row.name !== '' &&
+      row.name !== '名前' &&
+      row.name !== 'アルバイト氏名' &&
+      row.status.indexOf('退職済み') === -1
+    )
+    .map(row => row.name);
+  console.log('公開名前シートの取得結果:', names);
+  return names;
 }
 
 function fetchNamesJsonp() {
