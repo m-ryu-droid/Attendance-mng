@@ -1,4 +1,4 @@
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxL7pr3kYLpuuW_dJK6jo8Elpg0dWY5ctLXyo3IhZg-X5B7fa5KfooYsu_HixIPem6t/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwhBV11n912QUpf3S6y1Iq13aIf3_wQZaMgSuHqjwvLbdYdXlTcTPtgqlbBSOwK4quA/exec';
 const STORAGE_KEY = 'kintai_v2';
 const DEFAULT_NAME_KEY = 'kintai_default_name_v1';
 
