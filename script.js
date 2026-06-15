@@ -1,6 +1,11 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwFxb8y24H2ZMPpy1dQL56b_VgwtBC4J3fO9LUtkVTO23oZ-aG2M91q98kRhC8htTLy/exec';
 const STORAGE_KEY = 'kintai_v2';
 const DEFAULT_NAME_KEY = 'kintai_default_name_v1';
+const FALLBACK_NAMES = [
+  '奥田ロレーン',
+  '尾棹大朗',
+  'ルイ・ワイチェック'
+];
 
 const i18n = {
   ja: {
@@ -12,6 +17,7 @@ const i18n = {
     modalTitle: '退勤しますか？',
     modalBody: '退勤を記録するとデータがリセットされます。\nよろしいですか？',
     cancel: 'キャンセル', confirm: '退勤する', sending: '送信中...',
+    locationNotice: '出勤時のみ、現在地情報を取得して送信します。',
     toastCheckin: '出勤しました', toastBreak: '休憩開始しました',
     toastBreakEnd: '休憩終了しました', toastCheckout: '退勤しました！お疲れ様でした 🎉',
     toastFail: '送信失敗。もう一度押してください', toastNoName: '先に名前を選択してください',
@@ -26,6 +32,7 @@ const i18n = {
     modalTitle: 'Clock Out?',
     modalBody: 'This will record your clock-out time and reset the form.',
     cancel: 'Cancel', confirm: 'Clock Out', sending: 'Sending...',
+    locationNotice: 'Location is collected and sent only when clocking in.',
     toastCheckin: 'Clocked in!', toastBreak: 'Break started!',
     toastBreakEnd: 'Break ended!', toastCheckout: 'Clocked out! Good work today 🎉',
     toastFail: 'Failed. Please try again.', toastNoName: 'Please select your name first.',
@@ -198,7 +205,8 @@ async function record(type) {
   updateStatusUI();
 
   try {
-    await sendToGAS(type);
+    const location = type === '出勤' ? await getCurrentLocationForCheckin() : null;
+    await sendToGAS(type, location);
     if (type === '出勤') {
       showToast(i18n[lang].toastCheckin + ' ' + t, 'ok');
     } else {
@@ -239,7 +247,7 @@ async function doCheckout() {
   }
 }
 
-async function sendToGAS(type) {
+async function sendToGAS(type, location) {
   const name = document.getElementById('sel-name').value;
   const payload = {
     type,
@@ -248,7 +256,10 @@ async function sendToGAS(type) {
     checkin: times['出勤'] || '',
     checkout: times['退勤'] || '',
     breakstart: times['休憩開始'] || '',
-    breakend: times['休憩終了'] || ''
+    breakend: times['休憩終了'] || '',
+    latitude: location ? location.latitude : '',
+    longitude: location ? location.longitude : '',
+    locationAccuracy: location ? location.accuracy : ''
   };
 
   try {
@@ -265,6 +276,31 @@ async function sendToGAS(type) {
   }
 }
 
+function getCurrentLocationForCheckin() {
+  if (!navigator.geolocation) return Promise.resolve(null);
+
+  return new Promise(resolve => {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: Math.round(position.coords.accuracy)
+        });
+      },
+      error => {
+        console.warn('位置情報を取得できませんでした:', error);
+        resolve(null);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  });
+}
+
 function resetAll() {
   times = { '出勤': null, '退勤': null, '休憩開始': null, '休憩終了': null };
   clearStorage();
@@ -277,20 +313,24 @@ async function loadNames() {
   try {
     const data = await fetchNamesJsonp();
     if (!data.names || !Array.isArray(data.names)) throw new Error('Invalid names response');
-    const sel = document.getElementById('sel-name');
-    sel.innerHTML = '<option value="">' + i18n[lang].selectName + '</option>';
-    data.names.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      sel.appendChild(opt);
-    });
-    if (savedName && data.names.includes(savedName)) sel.value = savedName;
+    renderNameOptions(data.names);
   } catch (e) {
     console.error('名前一覧の読み込みに失敗しました:', e);
-    document.getElementById('sel-name').innerHTML = '<option value="">' + i18n[lang].loadFail + '</option>';
+    renderNameOptions(FALLBACK_NAMES);
   }
   updateButtonStates();
+}
+
+function renderNameOptions(names) {
+  const sel = document.getElementById('sel-name');
+  sel.innerHTML = '<option value="">' + i18n[lang].selectName + '</option>';
+  names.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+  if (savedName && names.includes(savedName)) sel.value = savedName;
 }
 
 function fetchNamesJsonp() {
@@ -319,7 +359,7 @@ function fetchNamesJsonp() {
       reject(new Error('Names request failed'));
     };
 
-    script.src = GAS_URL + sep + 'callback=' + encodeURIComponent(callbackName);
+    script.src = GAS_URL + sep + 'callback=' + encodeURIComponent(callbackName) + '&_=' + Date.now();
     document.head.appendChild(script);
   });
 }
