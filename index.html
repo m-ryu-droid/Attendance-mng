@@ -244,8 +244,10 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const GAS_URL = 'https://docs.google.com/spreadsheets/d/1vwm8vOrlHmirVJ_9SYJRsbiVa2AZUmcHdvGWEnI1OSM/edit?pli=1&gid=498421879#gid=498421879';
+// スプレッドシートの編集URLではなく、GASを「ウェブアプリ」としてデプロイした /exec URLを入れてください。
+const GAS_URL = 'https://script.google.com/macros/s/ここにGASのデプロイID/exec';
 const STORAGE_KEY = 'kintai_v2';
+const DEFAULT_NAME_KEY = 'kintai_default_name_v1';
 
 // 翻訳
 const i18n = {
@@ -281,7 +283,7 @@ const i18n = {
 
 let lang = localStorage.getItem('lang') || 'ja';
 let times = { '出勤': null, '退勤': null, '休憩開始': null, '休憩終了': null };
-let savedName = '';
+let savedName = localStorage.getItem(DEFAULT_NAME_KEY) || '';
 
 // 日付
 const now = new Date();
@@ -321,7 +323,7 @@ function applyTranslations() {
   // セレクトのプレースホルダー
   const sel = document.getElementById('sel-name');
   if (sel && sel.options[0] && !sel.options[0].value) {
-    sel.options[0].textContent = savedName ? '' : t.selectName;
+    sel.options[0].textContent = t.selectName;
   }
 }
 
@@ -333,7 +335,7 @@ function loadFromStorage() {
     const saved = JSON.parse(raw);
     if (saved.date !== dateStr) { localStorage.removeItem(STORAGE_KEY); return; }
     times = saved.times;
-    savedName = saved.name || '';
+    savedName = saved.name || savedName;
     updateButtonStates();
     updateStatusUI();
   } catch(e) {}
@@ -341,6 +343,10 @@ function loadFromStorage() {
 
 function saveToStorage() {
   const name = document.getElementById('sel-name').value;
+  if (name) {
+    savedName = name;
+    localStorage.setItem(DEFAULT_NAME_KEY, name);
+  }
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: dateStr, name, times }));
 }
 
@@ -358,6 +364,7 @@ function updateButtonStates() {
   const btnCheckout = document.getElementById('btn-checkout');
   const btnBreak    = document.getElementById('btn-break');
   const btnBreakend = document.getElementById('btn-breakend');
+  [btnCheckin, btnCheckout, btnBreak, btnBreakend].forEach(btn => btn.classList.remove('done-state'));
 
   // 出勤：名前選択済み かつ 未出勤
   btnCheckin.disabled  = !hasName || checkedIn;
@@ -417,7 +424,15 @@ function updateStatusUI() {
   document.getElementById('status-bar').classList.toggle('show', hasAny);
 }
 
-function onNameChange() { updateButtonStates(); saveToStorage(); }
+function onNameChange() {
+  const name = document.getElementById('sel-name').value;
+  if (name) {
+    savedName = name;
+    localStorage.setItem(DEFAULT_NAME_KEY, name);
+  }
+  updateButtonStates();
+  saveToStorage();
+}
 
 function getNow() {
   const d = new Date();
@@ -440,24 +455,6 @@ async function record(type) {
     // 休憩開始・終了はトーストのみ
     const toastKey = type === '休憩開始' ? 'toastBreak' : 'toastBreakEnd';
     showToast(i18n[lang][toastKey] + ' ' + t, 'ok');
-  }
-}
-
-// 退勤時は「すべての打刻データ」をまとめて送り、行を完成させる
-async function doCheckout() {
-  closeModal();
-  const t = getNow();
-  times['退勤'] = t;
-  document.getElementById('sending-overlay').classList.add('show');
-
-  try {
-    await sendToGAS(); // 休憩時間も含めて全データ送信
-    document.getElementById('sending-overlay').classList.remove('show');
-    showToast(i18n[lang].toastCheckout, 'ok');
-    setTimeout(() => resetAll(), 2500);
-  } catch(e) {
-    document.getElementById('sending-overlay').classList.remove('show');
-    showToast(i18n[lang].toastFail, 'ng');
   }
 }
 
@@ -506,7 +503,7 @@ async function sendToGAS() {
       method: 'POST',
       mode: 'no-cors', // これによりエラーが見えにくいですが、通信は飛びます
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'text/plain;charset=utf-8'
       },
       body: JSON.stringify(payload)
     });
@@ -519,7 +516,7 @@ async function sendToGAS() {
 function resetAll() {
   times = { '出勤': null, '退勤': null, '休憩開始': null, '休憩終了': null };
   clearStorage();
-  document.getElementById('sel-name').value = '';
+  document.getElementById('sel-name').value = savedName || '';
   updateButtonStates();
   updateStatusUI();
 }
@@ -527,7 +524,9 @@ function resetAll() {
 async function loadNames() {
   try {
     const res = await fetch(GAS_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
+    if (!data.names || !Array.isArray(data.names)) throw new Error('Invalid names response');
     const sel = document.getElementById('sel-name');
     sel.innerHTML = '<option value="">' + i18n[lang].selectName + '</option>';
     data.names.forEach(name => {
@@ -535,8 +534,9 @@ async function loadNames() {
       opt.value = name; opt.textContent = name;
       sel.appendChild(opt);
     });
-    if (savedName) { sel.value = savedName; }
+    if (savedName && data.names.includes(savedName)) { sel.value = savedName; }
   } catch(e) {
+    console.error('名前一覧の読み込みに失敗しました:', e);
     document.getElementById('sel-name').innerHTML = '<option value="">' + i18n[lang].loadFail + '</option>';
   }
   updateButtonStates();
