@@ -26,7 +26,7 @@ const i18n = {
     toastCheckin: '出勤しました', toastBreak: '休憩開始しました',
     toastBreakEnd: '休憩終了しました', toastCheckout: '退勤しました！お疲れ様でした 🎉',
     toastFail: '送信失敗。もう一度押してください', toastNoName: '先に名前を選択してください',
-    toastCommuteRequired: '退勤前に交通費を入力するか画像を添付してください',
+    toastCommuteRequired: '交通費・画像は後からでも送信できます',
     toastSupplementalRequired: '交通費・画像・メモのいずれかを入力してください',
     toastSupplementalSent: '交通費・メモを送信しました',
     toastFileLimit: '画像は3枚まで、1枚4MBまでです',
@@ -46,7 +46,7 @@ const i18n = {
     toastCheckin: 'Clocked in!', toastBreak: 'Break started!',
     toastBreakEnd: 'Break ended!', toastCheckout: 'Clocked out! Good work today 🎉',
     toastFail: 'Failed. Please try again.', toastNoName: 'Please select your name first.',
-    toastCommuteRequired: 'Enter commute fare or attach an image before clocking out.',
+    toastCommuteRequired: 'Commute fare and images can be sent later.',
     toastSupplementalRequired: 'Enter fare, attach an image, or add a memo.',
     toastSupplementalSent: 'Commute info and memo sent.',
     toastFileLimit: 'Up to 3 images, 4MB each.',
@@ -132,7 +132,6 @@ function updateButtonStates() {
   const breakStarted = !!times['休憩開始'];
   const breakEnded = !!times['休憩終了'];
   const checkedOut = !!times['退勤'];
-  const commuteReady = isCommuteReady();
   const supplementalReady = isSupplementalReady();
 
   const btnCheckin = document.getElementById('btn-checkin');
@@ -143,7 +142,7 @@ function updateButtonStates() {
   [btnCheckin, btnCheckout, btnBreak, btnBreakend].forEach(btn => btn.classList.remove('done-state'));
 
   btnCheckin.disabled = !hasName || checkedIn;
-  btnCheckout.disabled = !checkedIn || checkedOut || !commuteReady;
+  btnCheckout.disabled = !checkedIn || checkedOut;
   btnBreak.disabled = !checkedIn || breakStarted;
   btnBreakend.disabled = !breakStarted || breakEnded || checkedOut;
 
@@ -155,7 +154,7 @@ function updateButtonStates() {
 
   updateSteps(checkedIn, breakStarted, breakEnded, checkedOut);
   updatePrimaryAction(hasName, checkedIn, breakStarted, breakEnded, checkedOut);
-  updateCheckoutPanelState(checkedIn, checkedOut, commuteReady);
+  updateCheckoutPanelState(checkedIn, checkedOut, isSupplementalReady());
 }
 
 function updatePrimaryAction(hasName, checkedIn, breakStarted, breakEnded, checkedOut) {
@@ -327,10 +326,6 @@ async function record(type) {
 }
 
 function confirmCheckout() {
-  if (!isCommuteReady()) {
-    showToast(i18n[lang].toastCommuteRequired, 'ng');
-    return;
-  }
   document.getElementById('modal-time').textContent = getNow();
   document.getElementById('modal').classList.add('show');
 }
@@ -346,7 +341,9 @@ async function doCheckout() {
   document.getElementById('sending-overlay').classList.add('show');
 
   try {
-    const checkoutExtras = await collectCheckoutExtras();
+    const checkoutExtras = isSupplementalReady()
+      ? await collectSupplementalExtras()
+      : emptyCheckoutExtras();
     await sendToGAS('退勤', null, checkoutExtras);
     document.getElementById('sending-overlay').classList.remove('show');
     updateButtonStates();
@@ -395,13 +392,6 @@ async function sendToGAS(type, location, checkoutExtras) {
   }
 }
 
-function isCommuteReady() {
-  const fareGo = document.getElementById('fare-go')?.value.trim() || '';
-  const fareReturn = document.getElementById('fare-return')?.value.trim() || '';
-  const fileCount = document.getElementById('commute-files')?.files.length || 0;
-  return fileCount > 0 || (fareGo !== '' && fareReturn !== '');
-}
-
 function isSupplementalReady() {
   const fareGo = document.getElementById('fare-go')?.value.trim() || '';
   const fareReturn = document.getElementById('fare-return')?.value.trim() || '';
@@ -418,30 +408,8 @@ function updateCheckoutPanelState(checkedIn, checkedOut, commuteReady) {
   panel.classList.toggle('is-incomplete', checkedIn && !checkedOut && !commuteReady);
   panel.classList.toggle('is-ready', checkedIn && !checkedOut && commuteReady);
   note.textContent = commuteReady
-    ? '退勤できます。交通費とメモは退勤時に送信されます。'
-    : '交通費がない場合は、行き・帰りに0を入力してください。画像添付でも退勤できます。';
-}
-
-function collectCheckoutExtras() {
-  const fareGoRaw = document.getElementById('fare-go').value.trim();
-  const fareReturnRaw = document.getElementById('fare-return').value.trim();
-  const fareGo = fareGoRaw === '' ? '' : String(Math.max(0, parseInt(fareGoRaw, 10) || 0));
-  const fareReturn = fareReturnRaw === '' ? '' : String(Math.max(0, parseInt(fareReturnRaw, 10) || 0));
-  const fareTotal = String((parseInt(fareGo, 10) || 0) + (parseInt(fareReturn, 10) || 0));
-  const memo = document.getElementById('memo').value.trim();
-  const files = [...document.getElementById('commute-files').files];
-
-  if (!isCommuteReady()) {
-    throw new Error('Commute fare or image is required');
-  }
-
-  return readCommuteFiles(files).then(filePayloads => ({
-    fareGo,
-    fareReturn,
-    fareTotal,
-    memo,
-    files: filePayloads
-  }));
+    ? '入力済みの交通費・メモは退勤時にも送信されます。後から追加送信もできます。'
+    : '交通費・メモ・画像は退勤後でも送信できます。';
 }
 
 async function sendSupplementalInfo() {
@@ -489,6 +457,16 @@ function collectSupplementalExtras() {
     memo,
     files: filePayloads
   }));
+}
+
+function emptyCheckoutExtras() {
+  return {
+    fareGo: '',
+    fareReturn: '',
+    fareTotal: '',
+    memo: '',
+    files: []
+  };
 }
 
 function readCommuteFiles(files) {
