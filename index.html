@@ -98,3 +98,57 @@
 
     <div class="btn-grid secondary-actions" aria-label="打刻操作">
       <button class="btn-action btn-checkin" onclick="record('出勤')" id="btn-checkin" disabled>
+        <span class="icon">🟢</span>
+        <span data-i18n="checkin">出勤</span>
+        <span class="time-badge" id="time-checkin" data-i18n-default="未打刻">未打刻</span>
+      </button>
+      <button class="btn-action btn-checkout" onclick="confirmCheckout()" id="btn-checkout" disabled>
+        <span class="icon">🔴</span>
+        <span data-i18n="checkout">退勤</span>
+        <span class="time-badge" id="time-checkout" data-i18n-default="未打刻">未打刻</span>
+      </button>
+      <button class="btn-action btn-break" onclick="record('休憩開始')" id="btn-break" disabled>
+        <span class="icon">☕</span>
+        <span data-i18n="breakStart">休憩開始</span>
+        <span class="time-badge" id="time-break" data-i18n-default="未打刻">未打刻</span>
+      </button>
+      <button class="btn-action btn-breakend" onclick="record('休憩終了')" id="btn-breakend" disabled>
+        <span class="icon">✅</span>
+        <span data-i18n="breakEnd">休憩終了</span>
+        <span class="time-badge" id="time-breakend" data-i18n-default="未打刻">未打刻</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="status-bar show" id="status-bar">
+    <div class="status-title" data-i18n="todayStatus">本日の打刻状況</div>
+    <div class="status-grid">
+      <div class="status-item"><span data-i18n="checkin">出勤</span><strong id="s-checkin">—</strong></div>
+      <div class="status-item"><span data-i18n="checkout">退勤</span><strong id="s-checkout">—</strong></div>
+      <div class="status-item"><span data-i18n="breakStart">休憩開始</span><strong id="s-break">—</strong></div>
+      <div class="status-item"><span data-i18n="breakEnd">休憩終了</span><strong id="s-breakend">—</strong></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-icon">🔴</div>
+    <div class="modal-title" data-i18n="modalTitle">退勤しますか？</div>
+    <div class="modal-body" data-i18n="modalBody">退勤を記録するとリセットされます。よろしいですか？</div>
+    <div class="modal-time" id="modal-time"></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()" data-i18n="cancel">キャンセル</button>
+      <button class="modal-confirm" onclick="doCheckout()" data-i18n="confirm">退勤する</button>
+    </div>
+  </div>
+</div>
+
+<div class="sending-overlay" id="sending-overlay">
+  <div class="sending-box">📡 <span data-i18n="sending">送信中...</span></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="script.js?v=20260616-1"></script>
+</body>
+</html>
