@@ -462,6 +462,7 @@ function setupCheckoutInputs() {
   if (files) {
     files.addEventListener('change', () => {
       updateFileSummary();
+      renderFilePreviews();
       updateButtonStates();
     });
   }
@@ -486,6 +487,31 @@ function updateFileSummary() {
 
   summary.style.color = '';
   summary.textContent = files.length + '枚選択中';
+}
+
+function renderFilePreviews() {
+  const input = document.getElementById('commute-files');
+  const grid = document.getElementById('file-preview-grid');
+  if (!input || !grid) return;
+
+  grid.innerHTML = '';
+  const files = [...input.files].slice(0, MAX_COMMUTE_FILES);
+  files.forEach(file => {
+    const item = document.createElement('div');
+    item.className = 'file-preview';
+
+    const img = document.createElement('img');
+    img.alt = file.name;
+    img.src = URL.createObjectURL(file);
+    img.onload = () => URL.revokeObjectURL(img.src);
+
+    const caption = document.createElement('span');
+    caption.textContent = file.name;
+
+    item.appendChild(img);
+    item.appendChild(caption);
+    grid.appendChild(item);
+  });
 }
 
 function getCurrentLocationForCheckin() {
@@ -522,6 +548,7 @@ function resetAll() {
   document.getElementById('memo').value = '';
   document.getElementById('commute-files').value = '';
   updateFileSummary();
+  renderFilePreviews();
   updateButtonStates();
   updateStatusUI();
 }
