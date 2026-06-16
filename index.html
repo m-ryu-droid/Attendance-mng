@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>勤怠管理 / Attendance</title>
-  <link rel="stylesheet" href="styles.css?v=20260615-4" />
+  <link rel="stylesheet" href="styles.css?v=20260616-1" />
 </head>
 <body>
 <div class="container">
@@ -36,6 +36,32 @@
       <span class="state-label" data-i18n="currentStatus">現在の状態</span>
       <strong id="current-state">出勤前</strong>
       <span id="state-detail">名前を選択してください</span>
+    </div>
+    <div class="checkout-panel" id="checkout-panel">
+      <div class="checkout-panel-head">
+        <span>退勤前チェック</span>
+        <strong>交通費または画像が必須</strong>
+      </div>
+      <div class="fare-grid">
+        <label>
+          行き
+          <input id="fare-go" type="number" inputmode="numeric" min="0" placeholder="例 800" />
+        </label>
+        <label>
+          帰り
+          <input id="fare-return" type="number" inputmode="numeric" min="0" placeholder="例 950" />
+        </label>
+      </div>
+      <label class="file-field">
+        添付
+        <input id="commute-files" type="file" accept="image/*" multiple />
+        <span id="file-summary">画像は3枚まで</span>
+      </label>
+      <label class="memo-field">
+        メモ
+        <textarea id="memo" rows="2" placeholder="伝えたいことがあれば入力"></textarea>
+      </label>
+      <p class="checkout-note" id="checkout-note">交通費がない場合は、行き・帰りに0を入力してください。</p>
     </div>
     <button class="primary-action" id="primary-action" type="button" disabled>
       <span class="primary-kicker" data-i18n="nextAction">次の操作</span>
@@ -72,57 +98,3 @@
 
     <div class="btn-grid secondary-actions" aria-label="打刻操作">
       <button class="btn-action btn-checkin" onclick="record('出勤')" id="btn-checkin" disabled>
-        <span class="icon">🟢</span>
-        <span data-i18n="checkin">出勤</span>
-        <span class="time-badge" id="time-checkin" data-i18n-default="未打刻">未打刻</span>
-      </button>
-      <button class="btn-action btn-checkout" onclick="confirmCheckout()" id="btn-checkout" disabled>
-        <span class="icon">🔴</span>
-        <span data-i18n="checkout">退勤</span>
-        <span class="time-badge" id="time-checkout" data-i18n-default="未打刻">未打刻</span>
-      </button>
-      <button class="btn-action btn-break" onclick="record('休憩開始')" id="btn-break" disabled>
-        <span class="icon">☕</span>
-        <span data-i18n="breakStart">休憩開始</span>
-        <span class="time-badge" id="time-break" data-i18n-default="未打刻">未打刻</span>
-      </button>
-      <button class="btn-action btn-breakend" onclick="record('休憩終了')" id="btn-breakend" disabled>
-        <span class="icon">✅</span>
-        <span data-i18n="breakEnd">休憩終了</span>
-        <span class="time-badge" id="time-breakend" data-i18n-default="未打刻">未打刻</span>
-      </button>
-    </div>
-  </div>
-
-  <div class="status-bar show" id="status-bar">
-    <div class="status-title" data-i18n="todayStatus">本日の打刻状況</div>
-    <div class="status-grid">
-      <div class="status-item"><span data-i18n="checkin">出勤</span><strong id="s-checkin">—</strong></div>
-      <div class="status-item"><span data-i18n="checkout">退勤</span><strong id="s-checkout">—</strong></div>
-      <div class="status-item"><span data-i18n="breakStart">休憩開始</span><strong id="s-break">—</strong></div>
-      <div class="status-item"><span data-i18n="breakEnd">休憩終了</span><strong id="s-breakend">—</strong></div>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <div class="modal-icon">🔴</div>
-    <div class="modal-title" data-i18n="modalTitle">退勤しますか？</div>
-    <div class="modal-body" data-i18n="modalBody">退勤を記録するとリセットされます。よろしいですか？</div>
-    <div class="modal-time" id="modal-time"></div>
-    <div class="modal-btns">
-      <button class="modal-cancel" onclick="closeModal()" data-i18n="cancel">キャンセル</button>
-      <button class="modal-confirm" onclick="doCheckout()" data-i18n="confirm">退勤する</button>
-    </div>
-  </div>
-</div>
-
-<div class="sending-overlay" id="sending-overlay">
-  <div class="sending-box">📡 <span data-i18n="sending">送信中...</span></div>
-</div>
-<div class="toast" id="toast"></div>
-
-<script src="script.js?v=20260615-4"></script>
-</body>
-</html>
