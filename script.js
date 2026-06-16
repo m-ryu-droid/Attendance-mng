@@ -3,8 +3,12 @@ const NAME_SPREADSHEET_ID = '1JL_cyEa06mZnyj3Ar-Ie5sbL-QxxSm2X5fHlWKCrWog';
 const NAME_SHEET_GID = '0';
 const STORAGE_KEY = 'kintai_v2';
 const DEFAULT_NAME_KEY = 'kintai_default_name_v1';
+const MAX_COMMUTE_FILES = 3;
+const MAX_COMMUTE_FILE_SIZE = 4 * 1024 * 1024;
 const FALLBACK_NAMES = [
-  ''
+  '奥田ロレーン',
+  '尾棹大朗',
+  'ルイ・ワイチェック'
 ];
 
 const i18n = {
@@ -22,6 +26,8 @@ const i18n = {
     toastCheckin: '出勤しました', toastBreak: '休憩開始しました',
     toastBreakEnd: '休憩終了しました', toastCheckout: '退勤しました！お疲れ様でした 🎉',
     toastFail: '送信失敗。もう一度押してください', toastNoName: '先に名前を選択してください',
+    toastCommuteRequired: '退勤前に交通費を入力するか画像を添付してください',
+    toastFileLimit: '画像は3枚まで、1枚4MBまでです',
     loadFail: '読み込み失敗'
   },
   en: {
@@ -38,6 +44,8 @@ const i18n = {
     toastCheckin: 'Clocked in!', toastBreak: 'Break started!',
     toastBreakEnd: 'Break ended!', toastCheckout: 'Clocked out! Good work today 🎉',
     toastFail: 'Failed. Please try again.', toastNoName: 'Please select your name first.',
+    toastCommuteRequired: 'Enter commute fare or attach an image before clocking out.',
+    toastFileLimit: 'Up to 3 images, 4MB each.',
     loadFail: 'Load failed'
   }
 };
@@ -120,6 +128,7 @@ function updateButtonStates() {
   const breakStarted = !!times['休憩開始'];
   const breakEnded = !!times['休憩終了'];
   const checkedOut = !!times['退勤'];
+  const commuteReady = isCommuteReady();
 
   const btnCheckin = document.getElementById('btn-checkin');
   const btnCheckout = document.getElementById('btn-checkout');
@@ -128,7 +137,7 @@ function updateButtonStates() {
   [btnCheckin, btnCheckout, btnBreak, btnBreakend].forEach(btn => btn.classList.remove('done-state'));
 
   btnCheckin.disabled = !hasName || checkedIn;
-  btnCheckout.disabled = !checkedIn || checkedOut;
+  btnCheckout.disabled = !checkedIn || checkedOut || !commuteReady;
   btnBreak.disabled = !checkedIn || breakStarted;
   btnBreakend.disabled = !breakStarted || breakEnded || checkedOut;
 
@@ -139,6 +148,7 @@ function updateButtonStates() {
 
   updateSteps(checkedIn, breakStarted, breakEnded, checkedOut);
   updatePrimaryAction(hasName, checkedIn, breakStarted, breakEnded, checkedOut);
+  updateCheckoutPanelState(checkedIn, checkedOut, commuteReady);
 }
 
 function updatePrimaryAction(hasName, checkedIn, breakStarted, breakEnded, checkedOut) {
@@ -310,6 +320,10 @@ async function record(type) {
 }
 
 function confirmCheckout() {
+  if (!isCommuteReady()) {
+    showToast(i18n[lang].toastCommuteRequired, 'ng');
+    return;
+  }
   document.getElementById('modal-time').textContent = getNow();
   document.getElementById('modal').classList.add('show');
 }
@@ -325,7 +339,8 @@ async function doCheckout() {
   document.getElementById('sending-overlay').classList.add('show');
 
   try {
-    await sendToGAS('退勤');
+    const checkoutExtras = await collectCheckoutExtras();
+    await sendToGAS('退勤', null, checkoutExtras);
     document.getElementById('sending-overlay').classList.remove('show');
     updateButtonStates();
     updateStatusUI();
@@ -338,8 +353,9 @@ async function doCheckout() {
   }
 }
 
-async function sendToGAS(type, location) {
+async function sendToGAS(type, location, checkoutExtras) {
   const name = document.getElementById('sel-name').value;
+  const extras = checkoutExtras || {};
   const payload = {
     type,
     date: dateStr,
@@ -350,7 +366,12 @@ async function sendToGAS(type, location) {
     breakend: times['休憩終了'] || '',
     latitude: location ? location.latitude : '',
     longitude: location ? location.longitude : '',
-    locationAccuracy: location ? location.accuracy : ''
+    locationAccuracy: location ? location.accuracy : '',
+    fareGo: extras.fareGo || '',
+    fareReturn: extras.fareReturn || '',
+    fareTotal: extras.fareTotal || '',
+    memo: extras.memo || '',
+    commuteFiles: extras.files || []
   };
 
   try {
@@ -365,6 +386,106 @@ async function sendToGAS(type, location) {
     console.error('送信エラー:', e);
     throw e;
   }
+}
+
+function isCommuteReady() {
+  const fareGo = document.getElementById('fare-go')?.value.trim() || '';
+  const fareReturn = document.getElementById('fare-return')?.value.trim() || '';
+  const fileCount = document.getElementById('commute-files')?.files.length || 0;
+  return fileCount > 0 || (fareGo !== '' && fareReturn !== '');
+}
+
+function updateCheckoutPanelState(checkedIn, checkedOut, commuteReady) {
+  const panel = document.getElementById('checkout-panel');
+  const note = document.getElementById('checkout-note');
+  if (!panel || !note) return;
+
+  panel.classList.toggle('is-incomplete', checkedIn && !checkedOut && !commuteReady);
+  panel.classList.toggle('is-ready', checkedIn && !checkedOut && commuteReady);
+  note.textContent = commuteReady
+    ? '退勤できます。交通費とメモは退勤時に送信されます。'
+    : '交通費がない場合は、行き・帰りに0を入力してください。画像添付でも退勤できます。';
+}
+
+function collectCheckoutExtras() {
+  const fareGoRaw = document.getElementById('fare-go').value.trim();
+  const fareReturnRaw = document.getElementById('fare-return').value.trim();
+  const fareGo = fareGoRaw === '' ? '' : String(Math.max(0, parseInt(fareGoRaw, 10) || 0));
+  const fareReturn = fareReturnRaw === '' ? '' : String(Math.max(0, parseInt(fareReturnRaw, 10) || 0));
+  const fareTotal = String((parseInt(fareGo, 10) || 0) + (parseInt(fareReturn, 10) || 0));
+  const memo = document.getElementById('memo').value.trim();
+  const files = [...document.getElementById('commute-files').files];
+
+  if (!isCommuteReady()) {
+    throw new Error('Commute fare or image is required');
+  }
+
+  return readCommuteFiles(files).then(filePayloads => ({
+    fareGo,
+    fareReturn,
+    fareTotal,
+    memo,
+    files: filePayloads
+  }));
+}
+
+function readCommuteFiles(files) {
+  if (files.length > MAX_COMMUTE_FILES || files.some(file => file.size > MAX_COMMUTE_FILE_SIZE)) {
+    showToast(i18n[lang].toastFileLimit, 'ng');
+    return Promise.reject(new Error('Invalid commute file count or size'));
+  }
+
+  return Promise.all(files.map(file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      const base64 = result.includes(',') ? result.split(',')[1] : result;
+      resolve({
+        name: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        size: file.size,
+        base64
+      });
+    };
+    reader.onerror = () => reject(reader.error || new Error('File read failed'));
+    reader.readAsDataURL(file);
+  })));
+}
+
+function setupCheckoutInputs() {
+  ['fare-go', 'fare-return', 'memo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updateButtonStates);
+  });
+
+  const files = document.getElementById('commute-files');
+  if (files) {
+    files.addEventListener('change', () => {
+      updateFileSummary();
+      updateButtonStates();
+    });
+  }
+}
+
+function updateFileSummary() {
+  const input = document.getElementById('commute-files');
+  const summary = document.getElementById('file-summary');
+  if (!input || !summary) return;
+
+  const files = [...input.files];
+  if (files.length === 0) {
+    summary.textContent = '画像は3枚まで';
+    return;
+  }
+
+  if (files.length > MAX_COMMUTE_FILES || files.some(file => file.size > MAX_COMMUTE_FILE_SIZE)) {
+    summary.textContent = '画像は3枚まで、1枚4MBまでです';
+    summary.style.color = '#fecaca';
+    return;
+  }
+
+  summary.style.color = '';
+  summary.textContent = files.length + '枚選択中';
 }
 
 function getCurrentLocationForCheckin() {
@@ -396,6 +517,11 @@ function resetAll() {
   times = { '出勤': null, '退勤': null, '休憩開始': null, '休憩終了': null };
   clearStorage();
   document.getElementById('sel-name').value = savedName || '';
+  document.getElementById('fare-go').value = '';
+  document.getElementById('fare-return').value = '';
+  document.getElementById('memo').value = '';
+  document.getElementById('commute-files').value = '';
+  updateFileSummary();
   updateButtonStates();
   updateStatusUI();
 }
@@ -547,5 +673,6 @@ function showToast(msg, type) {
 loadFromStorage();
 applyTranslations();
 updateDateLabel();
+setupCheckoutInputs();
 loadNames();
 document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === lang.toUpperCase()));
