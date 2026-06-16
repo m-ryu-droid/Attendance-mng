@@ -1,4 +1,4 @@
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxHYY4i64MUAtCCgwosabex0VL0d6SR591UMSLlY8EF1fNRJGKsO9U3j2vULonQM2yJ/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycby_3-f-BBOlenqZKRSh2IM7eDJqyFhzFHqQbgikpWiKGpxEfb4ho2cgZ5YkWH3kWMp1/exec';
 const NAME_SPREADSHEET_ID = '1JL_cyEa06mZnyj3Ar-Ie5sbL-QxxSm2X5fHlWKCrWog';
 const NAME_SHEET_GID = '0';
 const STORAGE_KEY = 'kintai_v2';
