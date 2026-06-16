@@ -57,6 +57,7 @@ const i18n = {
 let lang = localStorage.getItem('lang') || 'ja';
 let times = { '出勤': null, '退勤': null, '休憩開始': null, '休憩終了': null };
 let savedName = localStorage.getItem(DEFAULT_NAME_KEY) || '';
+let selectedCommuteFiles = [];
 
 const now = new Date();
 const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
@@ -396,7 +397,7 @@ function isSupplementalReady() {
   const fareGo = document.getElementById('fare-go')?.value.trim() || '';
   const fareReturn = document.getElementById('fare-return')?.value.trim() || '';
   const memo = document.getElementById('memo')?.value.trim() || '';
-  const fileCount = document.getElementById('commute-files')?.files.length || 0;
+  const fileCount = selectedCommuteFiles.length;
   return fileCount > 0 || memo !== '' || fareGo !== '' || fareReturn !== '';
 }
 
@@ -444,7 +445,7 @@ function collectSupplementalExtras() {
     ? String((parseInt(fareGo, 10) || 0) + (parseInt(fareReturn, 10) || 0))
     : '';
   const memo = document.getElementById('memo').value.trim();
-  const files = [...document.getElementById('commute-files').files];
+  const files = selectedCommuteFiles;
 
   if (!isSupplementalReady()) {
     throw new Error('Supplemental info is required');
@@ -501,6 +502,8 @@ function setupCheckoutInputs() {
   const files = document.getElementById('commute-files');
   if (files) {
     files.addEventListener('change', () => {
+      selectedCommuteFiles = mergeCommuteFiles(selectedCommuteFiles, [...files.files]);
+      files.value = '';
       updateFileSummary();
       renderFilePreviews();
       updateButtonStates();
@@ -509,11 +512,10 @@ function setupCheckoutInputs() {
 }
 
 function updateFileSummary() {
-  const input = document.getElementById('commute-files');
   const summary = document.getElementById('file-summary');
-  if (!input || !summary) return;
+  if (!summary) return;
 
-  const files = [...input.files];
+  const files = selectedCommuteFiles;
   if (files.length === 0) {
     summary.textContent = '画像は3枚まで';
     return;
@@ -530,13 +532,12 @@ function updateFileSummary() {
 }
 
 function renderFilePreviews() {
-  const input = document.getElementById('commute-files');
   const grid = document.getElementById('file-preview-grid');
-  if (!input || !grid) return;
+  if (!grid) return;
 
   grid.innerHTML = '';
-  const files = [...input.files].slice(0, MAX_COMMUTE_FILES);
-  files.forEach(file => {
+  const files = selectedCommuteFiles.slice(0, MAX_COMMUTE_FILES);
+  files.forEach((file, index) => {
     const item = document.createElement('div');
     item.className = 'file-preview';
 
@@ -548,10 +549,30 @@ function renderFilePreviews() {
     const caption = document.createElement('span');
     caption.textContent = file.name;
 
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'file-remove';
+    remove.setAttribute('aria-label', file.name + 'を削除');
+    remove.textContent = '×';
+    remove.onclick = () => removeCommuteFile(index);
+
     item.appendChild(img);
+    item.appendChild(remove);
     item.appendChild(caption);
     grid.appendChild(item);
   });
+}
+
+function mergeCommuteFiles(currentFiles, newFiles) {
+  const merged = currentFiles.concat(newFiles);
+  return merged.slice(0, MAX_COMMUTE_FILES);
+}
+
+function removeCommuteFile(index) {
+  selectedCommuteFiles.splice(index, 1);
+  updateFileSummary();
+  renderFilePreviews();
+  updateButtonStates();
 }
 
 function getCurrentLocationForCheckin() {
@@ -587,6 +608,7 @@ function resetAll() {
   document.getElementById('fare-return').value = '';
   document.getElementById('memo').value = '';
   document.getElementById('commute-files').value = '';
+  selectedCommuteFiles = [];
   updateFileSummary();
   renderFilePreviews();
   updateButtonStates();
