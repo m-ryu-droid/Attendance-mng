@@ -1,4 +1,4 @@
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwCLLg9ER8QVcH3b3arblcaNtGKOuyk_TfDT7mZ-iizHgiuv-vSf1ejSKAmhoCdf4Sc/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyWKD4_y9s8mwI87wYtXtoM-0bbO-cTGO2mf4xN4DNmv1vNd3e1LmpCJ0iKqVAbDRy5/exec';
 const NAME_SPREADSHEET_ID = '1JL_cyEa06mZnyj3Ar-Ie5sbL-QxxSm2X5fHlWKCrWog';
 const NAME_SHEET_GID = '0';
 const STORAGE_KEY = 'kintai_v2';
@@ -27,6 +27,8 @@ const i18n = {
     toastBreakEnd: '休憩終了しました', toastCheckout: '退勤しました！お疲れ様でした 🎉',
     toastFail: '送信失敗。もう一度押してください', toastNoName: '先に名前を選択してください',
     toastCommuteRequired: '退勤前に交通費を入力するか画像を添付してください',
+    toastSupplementalRequired: '交通費・画像・メモのいずれかを入力してください',
+    toastSupplementalSent: '交通費・メモを送信しました',
     toastFileLimit: '画像は3枚まで、1枚4MBまでです',
     loadFail: '読み込み失敗'
   },
@@ -45,6 +47,8 @@ const i18n = {
     toastBreakEnd: 'Break ended!', toastCheckout: 'Clocked out! Good work today 🎉',
     toastFail: 'Failed. Please try again.', toastNoName: 'Please select your name first.',
     toastCommuteRequired: 'Enter commute fare or attach an image before clocking out.',
+    toastSupplementalRequired: 'Enter fare, attach an image, or add a memo.',
+    toastSupplementalSent: 'Commute info and memo sent.',
     toastFileLimit: 'Up to 3 images, 4MB each.',
     loadFail: 'Load failed'
   }
@@ -129,11 +133,13 @@ function updateButtonStates() {
   const breakEnded = !!times['休憩終了'];
   const checkedOut = !!times['退勤'];
   const commuteReady = isCommuteReady();
+  const supplementalReady = isSupplementalReady();
 
   const btnCheckin = document.getElementById('btn-checkin');
   const btnCheckout = document.getElementById('btn-checkout');
   const btnBreak = document.getElementById('btn-break');
   const btnBreakend = document.getElementById('btn-breakend');
+  const supplementalSend = document.getElementById('supplemental-send');
   [btnCheckin, btnCheckout, btnBreak, btnBreakend].forEach(btn => btn.classList.remove('done-state'));
 
   btnCheckin.disabled = !hasName || checkedIn;
@@ -145,6 +151,7 @@ function updateButtonStates() {
   if (checkedOut) { btnCheckout.classList.add('done-state'); btnCheckout.disabled = true; }
   if (breakStarted) { btnBreak.classList.add('done-state'); btnBreak.disabled = true; }
   if (breakEnded) { btnBreakend.classList.add('done-state'); btnBreakend.disabled = true; }
+  if (supplementalSend) supplementalSend.disabled = !hasName || !supplementalReady;
 
   updateSteps(checkedIn, breakStarted, breakEnded, checkedOut);
   updatePrimaryAction(hasName, checkedIn, breakStarted, breakEnded, checkedOut);
@@ -395,6 +402,14 @@ function isCommuteReady() {
   return fileCount > 0 || (fareGo !== '' && fareReturn !== '');
 }
 
+function isSupplementalReady() {
+  const fareGo = document.getElementById('fare-go')?.value.trim() || '';
+  const fareReturn = document.getElementById('fare-return')?.value.trim() || '';
+  const memo = document.getElementById('memo')?.value.trim() || '';
+  const fileCount = document.getElementById('commute-files')?.files.length || 0;
+  return fileCount > 0 || memo !== '' || fareGo !== '' || fareReturn !== '';
+}
+
 function updateCheckoutPanelState(checkedIn, checkedOut, commuteReady) {
   const panel = document.getElementById('checkout-panel');
   const note = document.getElementById('checkout-note');
@@ -418,6 +433,53 @@ function collectCheckoutExtras() {
 
   if (!isCommuteReady()) {
     throw new Error('Commute fare or image is required');
+  }
+
+  return readCommuteFiles(files).then(filePayloads => ({
+    fareGo,
+    fareReturn,
+    fareTotal,
+    memo,
+    files: filePayloads
+  }));
+}
+
+async function sendSupplementalInfo() {
+  if (!document.getElementById('sel-name').value) {
+    showToast(i18n[lang].toastNoName, 'ng');
+    return;
+  }
+
+  if (!isSupplementalReady()) {
+    showToast(i18n[lang].toastSupplementalRequired, 'ng');
+    return;
+  }
+
+  document.getElementById('sending-overlay').classList.add('show');
+  try {
+    const checkoutExtras = await collectSupplementalExtras();
+    await sendToGAS('交通費更新', null, checkoutExtras);
+    document.getElementById('sending-overlay').classList.remove('show');
+    showToast(i18n[lang].toastSupplementalSent, 'ok');
+  } catch (e) {
+    document.getElementById('sending-overlay').classList.remove('show');
+    showToast(i18n[lang].toastFail, 'ng');
+  }
+}
+
+function collectSupplementalExtras() {
+  const fareGoRaw = document.getElementById('fare-go').value.trim();
+  const fareReturnRaw = document.getElementById('fare-return').value.trim();
+  const fareGo = fareGoRaw === '' ? '' : String(Math.max(0, parseInt(fareGoRaw, 10) || 0));
+  const fareReturn = fareReturnRaw === '' ? '' : String(Math.max(0, parseInt(fareReturnRaw, 10) || 0));
+  const fareTotal = fareGo !== '' || fareReturn !== ''
+    ? String((parseInt(fareGo, 10) || 0) + (parseInt(fareReturn, 10) || 0))
+    : '';
+  const memo = document.getElementById('memo').value.trim();
+  const files = [...document.getElementById('commute-files').files];
+
+  if (!isSupplementalReady()) {
+    throw new Error('Supplemental info is required');
   }
 
   return readCommuteFiles(files).then(filePayloads => ({
