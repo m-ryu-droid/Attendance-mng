@@ -4,7 +4,10 @@ const NAME_SHEET_GID = '0';
 const STORAGE_KEY = 'kintai_v2';
 const DEFAULT_NAME_KEY = 'kintai_default_name_v1';
 const MAX_COMMUTE_FILES = 3;
-const MAX_COMMUTE_FILE_SIZE = 4 * 1024 * 1024;
+const MAX_COMMUTE_ORIGINAL_SIZE = 12 * 1024 * 1024;
+const MAX_COMMUTE_UPLOAD_SIZE = 2.5 * 1024 * 1024;
+const COMMUTE_IMAGE_MAX_SIDE = 1600;
+const COMMUTE_IMAGE_QUALITY = 0.72;
 const FALLBACK_NAMES = [
   '奥田ロレーン',
   '尾棹大朗',
@@ -29,7 +32,7 @@ const i18n = {
     toastCommuteRequired: '交通費・画像は後からでも送信できます',
     toastSupplementalRequired: '交通費・画像・メモのいずれかを入力してください',
     toastSupplementalSent: '交通費・メモを送信しました',
-    toastFileLimit: '画像は3枚まで、1枚4MBまでです',
+    toastFileLimit: '画像は3枚まで、1枚12MBまでです',
     loadFail: '読み込み失敗'
   },
   en: {
@@ -49,7 +52,7 @@ const i18n = {
     toastCommuteRequired: 'Commute fare and images can be sent later.',
     toastSupplementalRequired: 'Enter fare, attach an image, or add a memo.',
     toastSupplementalSent: 'Commute info and memo sent.',
-    toastFileLimit: 'Up to 3 images, 4MB each.',
+    toastFileLimit: 'Up to 3 images, 12MB each.',
     loadFail: 'Load failed'
   }
 };
@@ -471,26 +474,109 @@ function emptyCheckoutExtras() {
 }
 
 function readCommuteFiles(files) {
-  if (files.length > MAX_COMMUTE_FILES || files.some(file => file.size > MAX_COMMUTE_FILE_SIZE)) {
+  if (files.length > MAX_COMMUTE_FILES || files.some(file => file.size > MAX_COMMUTE_ORIGINAL_SIZE)) {
     showToast(i18n[lang].toastFileLimit, 'ng');
     return Promise.reject(new Error('Invalid commute file count or size'));
   }
 
-  return Promise.all(files.map(file => new Promise((resolve, reject) => {
+  return Promise.all(files.map(file => prepareCommuteFile(file)));
+}
+
+async function prepareCommuteFile(file) {
+  if (file.type && file.type.indexOf('image/') === 0) {
+    return compressImageFile(file);
+  }
+
+  if (file.size > MAX_COMMUTE_UPLOAD_SIZE) {
+    showToast(i18n[lang].toastFileLimit, 'ng');
+    throw new Error('Commute file is too large: ' + file.name);
+  }
+
+  return readFileAsPayload(file, file.name, file.type || 'application/octet-stream', file.size);
+}
+
+async function compressImageFile(file) {
+  const img = await loadImageFromFile(file);
+  const scale = Math.min(1, COMMUTE_IMAGE_MAX_SIDE / Math.max(img.width, img.height));
+  const width = Math.max(1, Math.round(img.width * scale));
+  const height = Math.max(1, Math.round(img.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, width, height);
+
+  let blob = await canvasToBlob(canvas, 'image/jpeg', COMMUTE_IMAGE_QUALITY);
+  if (blob.size > MAX_COMMUTE_UPLOAD_SIZE) {
+    blob = await canvasToBlob(canvas, 'image/jpeg', 0.58);
+  }
+  if (blob.size > MAX_COMMUTE_UPLOAD_SIZE) {
+    const smaller = document.createElement('canvas');
+    const smallScale = Math.min(1, 1280 / Math.max(width, height));
+    smaller.width = Math.max(1, Math.round(width * smallScale));
+    smaller.height = Math.max(1, Math.round(height * smallScale));
+    smaller.getContext('2d').drawImage(canvas, 0, 0, smaller.width, smaller.height);
+    blob = await canvasToBlob(smaller, 'image/jpeg', 0.6);
+  }
+  if (blob.size > MAX_COMMUTE_UPLOAD_SIZE) {
+    showToast('画像を圧縮できませんでした。スクショを小さくして再添付してください', 'ng');
+    throw new Error('Compressed image is too large: ' + file.name);
+  }
+
+  const filename = makeCompressedImageName(file.name);
+  return readFileAsPayload(blob, filename, 'image/jpeg', blob.size);
+}
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Image load failed: ' + file.name));
+    };
+    img.src = url;
+  });
+}
+
+function canvasToBlob(canvas, mimeType, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (blob) resolve(blob);
+      else reject(new Error('Image compression failed'));
+    }, mimeType, quality);
+  });
+}
+
+function readFileAsPayload(fileOrBlob, name, mimeType, size) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       const result = String(reader.result || '');
       const base64 = result.includes(',') ? result.split(',')[1] : result;
       resolve({
-        name: file.name,
-        mimeType: file.type || 'application/octet-stream',
-        size: file.size,
+        name,
+        mimeType,
+        size,
         base64
       });
     };
     reader.onerror = () => reject(reader.error || new Error('File read failed'));
-    reader.readAsDataURL(file);
-  })));
+    reader.readAsDataURL(fileOrBlob);
+  });
+}
+
+function makeCompressedImageName(filename) {
+  const stem = String(filename || 'commute_fare')
+    .replace(/\.[^.]+$/, '')
+    .replace(/[^\w.-]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'commute_fare';
+  return stem + '.jpg';
 }
 
 function setupCheckoutInputs() {
@@ -517,18 +603,18 @@ function updateFileSummary() {
 
   const files = selectedCommuteFiles;
   if (files.length === 0) {
-    summary.textContent = '画像は3枚まで';
+    summary.textContent = '画像は3枚まで・送信時に自動圧縮';
     return;
   }
 
-  if (files.length > MAX_COMMUTE_FILES || files.some(file => file.size > MAX_COMMUTE_FILE_SIZE)) {
-    summary.textContent = '画像は3枚まで、1枚4MBまでです';
+  if (files.length > MAX_COMMUTE_FILES || files.some(file => file.size > MAX_COMMUTE_ORIGINAL_SIZE)) {
+    summary.textContent = '画像は3枚まで、1枚12MBまでです';
     summary.style.color = '#fecaca';
     return;
   }
 
   summary.style.color = '';
-  summary.textContent = files.length + '枚選択中';
+  summary.textContent = files.length + '枚選択中（送信時に自動圧縮）';
 }
 
 function renderFilePreviews() {
