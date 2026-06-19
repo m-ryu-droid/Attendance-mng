@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>勤怠管理 / Attendance</title>
-  <link rel="stylesheet" href="styles.css?v=20260616-5" />
+  <link rel="stylesheet" href="styles.css?v=20260619-1" />
 </head>
 <body>
 <div class="container">
@@ -40,7 +40,7 @@
     <div class="checkout-panel" id="checkout-panel">
       <div class="checkout-panel-head">
         <span>交通費・備考</span>
-        <strong>交通費または画像が必須</strong>
+        <strong>退勤後も送信できます</strong>
       </div>
       <div class="fare-grid">
         <label>
@@ -55,7 +55,7 @@
       <label class="file-field">
         添付
         <input id="commute-files" type="file" accept="image/*" multiple />
-        <span id="file-summary">画像は3枚まで</span>
+        <span id="file-summary">画像は3枚まで・送信時に自動圧縮</span>
       </label>
       <div class="file-preview-grid" id="file-preview-grid" aria-label="添付画像プレビュー"></div>
       <label class="memo-field">
@@ -153,6 +153,6 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="script.js?v=20260616-5"></script>
+<script src="script.js?v=20260619-1"></script>
 </body>
 </html>
