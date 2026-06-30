@@ -33,7 +33,19 @@ const i18n = {
     toastSupplementalRequired: '交通費・画像・メモのいずれかを入力してください',
     toastSupplementalSent: '交通費・メモを送信しました',
     toastFileLimit: '画像は3枚まで、1枚12MBまでです',
-    loadFail: '読み込み失敗'
+    loadFail: '読み込み失敗',
+    actionTitle: '選べる操作',
+    actionHint: '明るく表示されているボタンが今押せる操作です。',
+    commuteTitle: '交通費・備考',
+    commuteSubtitle: '退勤後も送信できます',
+    fareGo: '行き',
+    fareReturn: '帰り',
+    fareAttach: '添付',
+    fileSummaryDefault: '画像は3枚まで・送信時に自動圧縮',
+    memoLabel: 'メモ',
+    memoPlaceholder: '伝えたいことがあれば入力',
+    supplementalSend: '交通費・メモだけ送信',
+    checkoutNote: '交通費がない場合は、行き・帰りに0を入力してください。'
   },
   en: {
     title: 'Attendance', selectStaff: 'Select Staff', name: 'Name',
@@ -51,15 +63,23 @@ const i18n = {
     toastFail: 'Failed. Please try again.', toastNoName: 'Please select your name first.',
     toastCommuteRequired: 'Commute fare and images can be sent later.',
     toastSupplementalRequired: 'Enter fare, attach an image, or add a memo.',
-    toastSupplementalSent: 'Commute info and memo sent.',actionHint: 'Highlighted buttons are available now.',
-    toastFileLimit: 'Up to 3 images, 12MB each.',commuteTitle: 'Commute & Notes',
-    loadFail: 'Load failed',actionTitle: 'Actions',actionHint: 'Highlighted buttons are available now.',
-    commuteSubtitle: 'Can be sent after clocking out',fareGo: 'To work',fareAttach: 'Attachment',
-    fileSummaryDefault: 'Up to 3 images, auto-compressed',memoLabel: 'Notes',memoPlaceholder: 'Add a note (optional)',
-    supplementalSend: 'Send commute info only',checkoutNote: 'Enter 0 for fare if you had no commute costs.',
+    toastSupplementalSent: 'Commute info and memo sent.',
+    toastFileLimit: 'Up to 3 images, 12MB each.',
+    loadFail: 'Load failed',
+    actionTitle: 'Actions',
+    actionHint: 'Highlighted buttons are available now.',
+    commuteTitle: 'Commute & Notes',
+    commuteSubtitle: 'Can be sent after clocking out',
+    fareGo: 'To work',
+    fareReturn: 'From work',
+    fareAttach: 'Attachment',
+    fileSummaryDefault: 'Up to 3 images, auto-compressed',
+    memoLabel: 'Notes',
+    memoPlaceholder: 'Add a note (optional)',
+    supplementalSend: 'Send commute info only',
+    checkoutNote: 'Enter 0 for fare if you had no commute costs.'
   }
 };
-
 let lang = localStorage.getItem('lang') || 'ja';
 let times = { '出勤': null, '退勤': null, '休憩開始': null, '休憩終了': null };
 let savedName = localStorage.getItem(DEFAULT_NAME_KEY) || '';
