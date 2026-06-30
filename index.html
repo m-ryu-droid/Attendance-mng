@@ -55,17 +55,17 @@
       <label class="file-field">
         添付
         <input id="commute-files" type="file" accept="image/*" multiple />
-        <span id="file-summary">画像は3枚まで・送信時に自動圧縮</span>
+        <span id="file-summary" data-i18n="fileSummaryDefault">画像は3枚まで・送信時に自動圧縮</span>
       </label>
       <div class="file-preview-grid" id="file-preview-grid" aria-label="添付画像プレビュー"></div>
-      <label class="memo-field">
+      <label class="memo-field" data-i18n="memolabel">
         メモ
-        <textarea id="memo" rows="2" placeholder="伝えたいことがあれば入力"></textarea>
+        <textarea id="memo" data-i18n="memoPlaceholder" rows="2" placeholder="伝えたいことがあれば入力"></textarea>
       </label>
       <button class="supplemental-send" id="supplemental-send" type="button" onclick="sendSupplementalInfo()" disabled>
         交通費・メモだけ送信
       </button>
-      <p class="checkout-note" id="checkout-note">交通費がない場合は、行き・帰りに0を入力してください。</p>
+      <p class="checkout-note" id="checkout-note" data-i18n="checkoutNote">交通費がない場合は、行き・帰りに0を入力してください。</p>
     </div>
     <button class="primary-action" id="primary-action" type="button" disabled>
       <span class="primary-kicker" data-i18n="nextAction">次の操作</span>
