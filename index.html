@@ -40,7 +40,8 @@
     <div class="checkout-panel" id="checkout-panel">
       <div class="checkout-panel-head">
         <span class="card-title" data-i18n="commuteTitle">交通費・備考</span>        
-<strong data-i18n="someKey">退勤後も送信できます</strong>
+<!-- ① someKey → commuteSubtitle に修正 -->
+<strong data-i18n="commuteSubtitle">退勤後も送信できます</strong>
       </div>
       <div class="fare-grid">
         <label>
@@ -55,12 +56,21 @@
       <label class="file-field" data-i18n="fareAttach">
         添付
         <input id="commute-files" type="file" accept="image/*" multiple />
-        <span id="file-summary" data-i18n="fileSummaryDefault">画像は3枚まで・送信時に自動圧縮</span>
+        <!-- ① label から data-i18n を外し、テキスト部分だけ span で囲む -->
+<label class="file-field">
+  <span data-i18n="fareAttach">添付</span>
+  <input id="commute-files" type="file" accept="image/*" multiple />
+  <span id="file-summary" data-i18n="fileSummaryDefault">画像は3枚まで・送信時に自動圧縮</span>
+</label>
       </label>
       <div class="file-preview-grid" id="file-preview-grid" aria-label="添付画像プレビュー"></div>
       <label class="memo-field" data-i18n="memolabel">
         メモ
-        <textarea id="memo" data-i18n="memoPlaceholder" rows="2" placeholder="伝えたいことがあれば入力"></textarea>
+        <!-- ① label から data-i18n を外し、③ memoLabel に修正 -->
+<label class="memo-field">
+  <span data-i18n="memoLabel">メモ</span>
+  <textarea id="memo" rows="2" placeholder="伝えたいことがあれば入力"></textarea>
+</label>
       </label>
       <button class="supplemental-send" id="supplemental-send" data-i18n="supplementalSend"  type="button" onclick="sendSupplementalInfo()" disabled>
         交通費・メモだけ送信
