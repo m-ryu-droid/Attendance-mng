@@ -51,7 +51,7 @@ const i18n = {
     toastFail: 'Failed. Please try again.', toastNoName: 'Please select your name first.',
     toastCommuteRequired: 'Commute fare and images can be sent later.',
     toastSupplementalRequired: 'Enter fare, attach an image, or add a memo.',
-    toastSupplementalSent: 'Commute info and memo sent.',
+    toastSupplementalSent: 'Commute info and memo sent.',actionHint: 'Highlighted buttons are available now.',
     toastFileLimit: 'Up to 3 images, 12MB each.',commuteTitle: 'Commute & Notes',
     loadFail: 'Load failed',actionTitle: 'Actions',actionHint: 'Highlighted buttons are available now.',
     commuteSubtitle: 'Can be sent after clocking out',fareGo: 'To work',fareAttach: 'Attachment',
