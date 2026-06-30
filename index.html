@@ -52,7 +52,7 @@
           <input id="fare-return" type="number" inputmode="numeric" min="0" placeholder="例 950" />
         </label>
       </div>
-      <label class="file-field">
+      <label class="file-field" data-i18n="fareAttach">
         添付
         <input id="commute-files" type="file" accept="image/*" multiple />
         <span id="file-summary" data-i18n="fileSummaryDefault">画像は3枚まで・送信時に自動圧縮</span>
@@ -62,7 +62,7 @@
         メモ
         <textarea id="memo" data-i18n="memoPlaceholder" rows="2" placeholder="伝えたいことがあれば入力"></textarea>
       </label>
-      <button class="supplemental-send" id="supplemental-send" type="button" onclick="sendSupplementalInfo()" disabled>
+      <button class="supplemental-send" id="supplemental-send" data-i18n="supplementalSend"  type="button" onclick="sendSupplementalInfo()" disabled>
         交通費・メモだけ送信
       </button>
       <p class="checkout-note" id="checkout-note" data-i18n="checkoutNote">交通費がない場合は、行き・帰りに0を入力してください。</p>
