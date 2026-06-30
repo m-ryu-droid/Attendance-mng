@@ -52,8 +52,11 @@ const i18n = {
     toastCommuteRequired: 'Commute fare and images can be sent later.',
     toastSupplementalRequired: 'Enter fare, attach an image, or add a memo.',
     toastSupplementalSent: 'Commute info and memo sent.',
-    toastFileLimit: 'Up to 3 images, 12MB each.',
-    loadFail: 'Load failed'
+    toastFileLimit: 'Up to 3 images, 12MB each.',commuteTitle: 'Commute & Notes',
+    loadFail: 'Load failed',actionTitle: 'Actions',actionHint: 'Highlighted buttons are available now.',
+    commuteSubtitle: 'Can be sent after clocking out',fareGo: 'To work',fareAttach: 'Attachment',
+    fileSummaryDefault: 'Up to 3 images, auto-compressed',memoLabel: 'Notes',memoPlaceholder: 'Add a note (optional)',
+    supplementalSend: 'Send commute info only',checkoutNote: 'Enter 0 for fare if you had no commute costs.',
   }
 };
 
