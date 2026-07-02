@@ -9,9 +9,7 @@ const MAX_COMMUTE_UPLOAD_SIZE = 2.5 * 1024 * 1024;
 const COMMUTE_IMAGE_MAX_SIDE = 1600;
 const COMMUTE_IMAGE_QUALITY = 0.72;
 const FALLBACK_NAMES = [
-  '奥田ロレーン',
-  '尾棹大朗',
-  'ルイ・ワイチェック'
+  ''
 ];
 
 const i18n = {
@@ -51,7 +49,7 @@ const i18n = {
     title: 'Attendance', selectStaff: 'Select Staff', name: 'Name',
     attendance: 'Clock In/Out', todayStatus: "Today's Record",
     currentStatus: 'Current Status', nextAction: 'Next Action',
-    checkin: 'Clock In', checkout: 'Clock Out', breakStart: 'Break Start', breakEnd: 'Break End',
+    checkin: 'Clock In', checkout: 'Clock Out', breakStart: 'Start Break', breakEnd: 'End Break',
     stepIn: 'In', stepBreak: 'Break', stepBreakEnd: 'Back', stepOut: 'Out',
     notYet: 'Not yet', loading: 'Loading...', selectName: 'Select name',
     modalTitle: 'Clock Out?',
