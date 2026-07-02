@@ -2,151 +2,152 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>勤怠管理 / Attendance</title>
-  <link rel="stylesheet" href="styles.css?v=20260619-1" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<div class="container">
+<div class="app">
+
+  <!-- Header -->
   <div class="header">
-    <div style="width:72px"></div>
-    <div class="header-center">
-      <h1>⏱ <span data-i18n="title">勤怠管理</span></h1>
-      <div class="date" id="today-date"></div>
+    <div class="hd-spacer"></div>
+    <div class="hd-center">
+      <div class="hd-title" data-i18n="title">勤怠管理</div>
+      <div class="hd-date" id="hd-date"></div>
     </div>
-    <div class="lang-toggle">
+    <div class="lang-row">
       <button class="lang-btn active" onclick="setLang('ja')">JA</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title" data-i18n="selectStaff">スタッフ選択</div>
-    <div class="form-group">
-      <label data-i18n="name">名前</label>
-      <select id="sel-name" onchange="onNameChange()">
-        <option value="" data-i18n-opt="loading">読み込み中...</option>
-      </select>
-      <p class="notice" data-i18n="locationNotice">出勤時のみ、現在地情報を取得して送信します。</p>
+  <!-- Name card with inline status badge -->
+  <div class="name-card">
+    <div class="name-head">
+      <div class="field-lbl" data-i18n="name">名前</div>
+      <div class="status-badge s-none" id="state-badge">
+        <div class="sb-dot"></div>
+        <span id="state-badge-text">未出勤</span>
+      </div>
     </div>
+    <select class="name-sel" id="sel-name" onchange="onNameChange()">
+      <option value="">選択してください</option>
+    </select>
+    <div class="loc-note" data-i18n="locationNotice">出勤時のみ、現在地情報を取得して送信します。</div>
   </div>
 
-  <div class="state-panel">
-    <div class="state-copy">
-      <span class="state-label" data-i18n="currentStatus">現在の状態</span>
-      <strong id="current-state">出勤前</strong>
-      <span id="state-detail">名前を選択してください</span>
-    </div>
-    <div class="checkout-panel" id="checkout-panel">
-      <div class="checkout-panel-head">
-        <span class="card-title" data-i18n="commuteTitle">交通費・備考</span>        
-<!-- ① someKey → commuteSubtitle に修正 -->
-<strong data-i18n="commuteSubtitle">退勤後も送信できます</strong>
-      </div>
-      <div class="fare-grid">
-        <label>
-          行き
-          <input id="fare-go" type="number" inputmode="numeric" min="0" placeholder="例 800" />
-        </label>
-        <label>
-          帰り
-          <input id="fare-return" type="number" inputmode="numeric" min="0" placeholder="例 950" />
-        </label>
-      </div>
-      <label class="file-field" data-i18n="fareAttach">
-        添付
-        <input id="commute-files" type="file" accept="image/*" multiple />
-        <!-- ① label から data-i18n を外し、テキスト部分だけ span で囲む -->
-<label class="file-field">
-  <span data-i18n="fareAttach">添付</span>
-  <input id="commute-files" type="file" accept="image/*" multiple />
-  <span id="file-summary" data-i18n="fileSummaryDefault">画像は3枚まで・送信時に自動圧縮</span>
-</label>
-      </label>
-      <div class="file-preview-grid" id="file-preview-grid" aria-label="添付画像プレビュー"></div>
-<label class="memo-field">
-  <span data-i18n="memoLabel">メモ</span>
-  <textarea id="memo" rows="2" placeholder="伝えたいことがあれば入力"></textarea>
-</label>
-      </label>
-      <button class="supplemental-send" id="supplemental-send" data-i18n="supplementalSend"  type="button" onclick="sendSupplementalInfo()" disabled>
-        交通費・メモだけ送信
-      </button>
-      <p class="checkout-note" id="checkout-note" data-i18n="checkoutNote">交通費がない場合は、行き・帰りに0を入力してください。</p>
-    </div>
-    <button class="primary-action" id="primary-action" type="button" disabled>
-      <span class="primary-kicker" data-i18n="nextAction">次の操作</span>
-      <span class="primary-label" id="primary-label">出勤</span>
-      <span class="primary-time" id="primary-time">--:--</span>
+  <!-- Main punch buttons (出勤 / 退勤) -->
+  <div class="main-btns">
+    <button class="main-btn btn-ci" id="btn-ci" disabled onclick="confirmCheckin()">
+      <div class="btn-indicator" id="ind-ci">→</div>
+      <div class="btn-label" data-i18n="checkin">出勤</div>
+      <div class="btn-time" id="time-ci">--:--</div>
+      <div class="done-badge">✓</div>
+    </button>
+    <button class="main-btn btn-co" id="btn-co" disabled onclick="confirmCheckout()">
+      <div class="btn-indicator" id="ind-co">←</div>
+      <div class="btn-label" data-i18n="checkout">退勤</div>
+      <div class="btn-time" id="time-co">--:--</div>
+      <div class="done-badge">✓</div>
     </button>
   </div>
 
-  <div class="card action-card">
-    <div class="card-title">選べる操作</div>
-    <p class="action-hint">明るく表示されているボタンが今押せる操作です。</p>
+  <!-- Break buttons (休憩開始 / 休憩終了) -->
+  <div class="break-btns">
+    <button class="break-btn" id="btn-bs" disabled onclick="record('休憩開始')">
+      <div class="break-dot" style="background:#D97706;"></div>
+      <div class="break-lbl" data-i18n="breakStart">休憩開始</div>
+      <div class="break-time" id="time-bs">--:--</div>
+    </button>
+    <button class="break-btn" id="btn-be" disabled onclick="record('休憩終了')">
+      <div class="break-dot" style="background:#7C3AED;"></div>
+      <div class="break-lbl" data-i18n="breakEnd">休憩終了</div>
+      <div class="break-time" id="time-be">--:--</div>
+    </button>
+  </div>
 
-    <div class="step-bar">
-      <div class="step">
-        <div class="step-dot" id="step-checkin"></div>
-        <div class="step-label" data-i18n="stepIn">出勤</div>
+  <!-- Commute accordion -->
+  <div class="commute-card" id="commute-card">
+    <div class="acc-head" onclick="toggleAcc()">
+      <div class="acc-left">
+        <div class="section-title" data-i18n="commuteTitle">交通費・備考</div>
+        <div class="section-sub" data-i18n="commuteSubtitle">退勤後も送信できます</div>
       </div>
-      <div class="step-line" id="line-break"></div>
-      <div class="step">
-        <div class="step-dot" id="step-break"></div>
-        <div class="step-label" data-i18n="stepBreak">休憩</div>
-      </div>
-      <div class="step-line" id="line-breakend"></div>
-      <div class="step">
-        <div class="step-dot" id="step-breakend"></div>
-        <div class="step-label" data-i18n="stepBreakEnd">休憩終了</div>
-      </div>
-      <div class="step-line" id="line-checkout"></div>
-      <div class="step">
-        <div class="step-dot" id="step-checkout"></div>
-        <div class="step-label" data-i18n="stepOut">退勤</div>
-      </div>
+      <div class="acc-chevron">&#8964;</div>
     </div>
-
-    <div class="btn-grid secondary-actions" aria-label="打刻操作">
-      <button class="btn-action btn-checkin" onclick="record('出勤')" id="btn-checkin" disabled>
-        <span class="icon">🟢</span>
-        <span data-i18n="checkin">出勤</span>
-        <span class="time-badge" id="time-checkin" data-i18n-default="未打刻">未打刻</span>
-      </button>
-      <button class="btn-action btn-checkout" onclick="confirmCheckout()" id="btn-checkout" disabled>
-        <span class="icon">🔴</span>
-        <span data-i18n="checkout">退勤</span>
-        <span class="time-badge" id="time-checkout" data-i18n-default="未打刻">未打刻</span>
-      </button>
-      <button class="btn-action btn-break" onclick="record('休憩開始')" id="btn-break" disabled>
-        <span class="icon">☕</span>
-        <span data-i18n="breakStart">休憩開始</span>
-        <span class="time-badge" id="time-break" data-i18n-default="未打刻">未打刻</span>
-      </button>
-      <button class="btn-action btn-breakend" onclick="record('休憩終了')" id="btn-breakend" disabled>
-        <span class="icon">✅</span>
-        <span data-i18n="breakEnd">休憩終了</span>
-        <span class="time-badge" id="time-breakend" data-i18n-default="未打刻">未打刻</span>
+    <div class="acc-body">
+      <div class="fare-row">
+        <div class="fare-field">
+          <div class="fare-lbl" data-i18n="fareGo">行き (円)</div>
+          <input class="fare-input" id="fare-go" type="number" inputmode="numeric" min="0" placeholder="800" oninput="updateButtonStates()" />
+        </div>
+        <div class="fare-field">
+          <div class="fare-lbl" data-i18n="fareReturn">帰り (円)</div>
+          <input class="fare-input" id="fare-return" type="number" inputmode="numeric" min="0" placeholder="950" oninput="updateButtonStates()" />
+        </div>
+      </div>
+      <div class="attach-row">
+        <div class="attach-btn">
+          <span data-i18n="fareAttach">添付する</span>
+          <input type="file" id="file-inp" accept="image/*" multiple />
+        </div>
+        <div class="attach-count" id="attach-count">画像は3枚まで・送信時に自動圧縮</div>
+      </div>
+      <div class="file-thumbs" id="file-thumbs"></div>
+      <textarea class="memo-area" id="memo" placeholder="伝えたいことがあれば入力" oninput="updateButtonStates()"></textarea>
+      <div class="checkout-note" data-i18n="checkoutNote">交通費がない場合は、行き・帰りに0を入力してください。</div>
+      <button class="supp-btn" id="supp-btn" disabled onclick="sendSupplementalInfo()">
+        <span data-i18n="supplementalSend">交通費・メモだけ送信</span>
       </button>
     </div>
   </div>
 
-  <div class="status-bar show" id="status-bar">
+  <!-- Today's status -->
+  <div class="status-card">
     <div class="status-title" data-i18n="todayStatus">本日の打刻状況</div>
-    <div class="status-grid">
-      <div class="status-item"><span data-i18n="checkin">出勤</span><strong id="s-checkin">—</strong></div>
-      <div class="status-item"><span data-i18n="checkout">退勤</span><strong id="s-checkout">—</strong></div>
-      <div class="status-item"><span data-i18n="breakStart">休憩開始</span><strong id="s-break">—</strong></div>
-      <div class="status-item"><span data-i18n="breakEnd">休憩終了</span><strong id="s-breakend">—</strong></div>
+    <div class="status-rows">
+      <div class="status-row">
+        <div class="status-left"><div class="s-dot" style="background:var(--green)"></div><span data-i18n="checkin">出勤</span></div>
+        <div class="status-val" id="s-ci">—</div>
+      </div>
+      <div class="status-row">
+        <div class="status-left"><div class="s-dot" style="background:#D97706"></div><span data-i18n="breakStart">休憩開始</span></div>
+        <div class="status-val" id="s-bs">—</div>
+      </div>
+      <div class="status-row">
+        <div class="status-left"><div class="s-dot" style="background:#7C3AED"></div><span data-i18n="breakEnd">休憩終了</span></div>
+        <div class="status-val" id="s-be">—</div>
+      </div>
+      <div class="status-row">
+        <div class="status-left"><div class="s-dot" style="background:var(--red)"></div><span data-i18n="checkout">退勤</span></div>
+        <div class="status-val" id="s-co">—</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- 出勤確認モーダル -->
+<div class="modal-ov" id="modal-ci">
+  <div class="modal">
+    <div class="modal-ttl">出勤の確認</div>
+    <div class="modal-body">あなたは</div>
+    <div class="modal-name" id="ci-modal-name"></div>
+    <div class="modal-body">で間違いないですか？</div>
+    <div style="height:8px;"></div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeCheckinModal()">戻る</button>
+      <button class="modal-confirm green" onclick="doCheckin()">出勤する</button>
     </div>
   </div>
 </div>
 
-<div class="modal-overlay" id="modal">
+<!-- 退勤確認モーダル -->
+<div class="modal-ov" id="modal">
   <div class="modal">
-    <div class="modal-icon">🔴</div>
-    <div class="modal-title" data-i18n="modalTitle">退勤しますか？</div>
-    <div class="modal-body" data-i18n="modalBody">退勤を記録するとリセットされます。よろしいですか？</div>
+    <div class="modal-ttl" data-i18n="modalTitle">退勤しますか？</div>
+    <div class="modal-body" data-i18n="modalBody">退勤を記録するとデータがリセットされます。よろしいですか？</div>
     <div class="modal-time" id="modal-time"></div>
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeModal()" data-i18n="cancel">キャンセル</button>
@@ -155,11 +156,13 @@
   </div>
 </div>
 
+<!-- 送信中オーバーレイ -->
 <div class="sending-overlay" id="sending-overlay">
-  <div class="sending-box">📡 <span data-i18n="sending">送信中...</span></div>
+  <div class="sending-box" data-i18n="sending">送信中...</div>
 </div>
+
 <div class="toast" id="toast"></div>
 
-<script src="script.js?v=20260619-1"></script>
+<script src="script.js"></script>
 </body>
 </html>
