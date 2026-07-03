@@ -49,7 +49,7 @@ const i18n = {
     title: 'Attendance', selectStaff: 'Select Staff', name: 'Name',
     attendance: 'Clock In/Out', todayStatus: "Today's Record",
     currentStatus: 'Current Status', nextAction: 'Next Action',
-    checkin: 'Clock In', checkout: 'Clock Out', breakStart: 'Start Break', breakEnd: 'End Break',
+    checkin: 'Clock In', checkout: 'Clock Out', breakStart: 'Break Start', breakEnd: 'Break End',
     stepIn: 'In', stepBreak: 'Break', stepBreakEnd: 'Back', stepOut: 'Out',
     notYet: 'Not yet', loading: 'Loading...', selectName: 'Select name',
     modalTitle: 'Clock Out?',
@@ -175,9 +175,9 @@ function updateButtonStates() {
   // Lock name selector after clock-in
   selEl.disabled = ci;
 
-  // Supplemental send: requires clock-in + at least one field filled
+  // Supplemental send: requires name + at least one field filled (no clock-in required)
   const suppBtn = document.getElementById('supp-btn');
-  if (suppBtn) suppBtn.disabled = !ci || !isSupplementalReady();
+  if (suppBtn) suppBtn.disabled = !hasName || !isSupplementalReady();
 
   updateStateBadge();
 }
@@ -375,7 +375,7 @@ function isSupplementalReady() {
 }
 
 async function sendSupplementalInfo() {
-  if (!times['出勤']) {
+  if (!document.getElementById('sel-name').value) {
     showToast(i18n[lang].toastNoName, 'ng');
     return;
   }
