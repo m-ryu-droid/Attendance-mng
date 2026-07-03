@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>操作マニュアル — 勤怠管理</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:  #15803D; --green-bg:  #F0FDF4; --green-bd:  #BBF7D0;
+      --red:    #C2201F; --red-bg:    #FEF2F2; --red-bd:    #FECACA;
+      --amber:  #D97706; --amber-bg:  #FFFBEB; --amber-bd:  #FDE68A;
+      --blue:   #2563EB; --blue-bg:   #EFF6FF; --blue-bd:   #BFDBFE;
+      --purple: #7C3AED;
+      --bg: #EEF2F7; --card: #FFFFFF;
+      --text: #0F172A; --sub: #64748B; --muted: #94A3B8;
+      --border: #E2E8F0;
+      --r: 14px; --r-sm: 9px;
+    }
+
+    html, body { background: var(--bg); min-height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      padding: 0 0 40px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px 12px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .topbar-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--blue); color: #fff;
+      font-size: 16px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .topbar-label { font-size: 13px; font-weight: 700; color: var(--text); }
+    .topbar-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+    /* ── Main wrap ── */
+    .wrap { max-width: 480px; margin: 0 auto; padding: 20px 16px 0; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Section label ── */
+    .sec-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 6px;
+    }
+
+    /* ── Flow banner ── */
+    .flow-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 16px 16px 14px;
+    }
+    .flow-title { font-size: 13px; font-weight: 700; margin-bottom: 14px; }
+    .flow-row {
+      display: flex; align-items: center; gap: 0;
+    }
+    .flow-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center;
+    }
+    .flow-dot {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: #fff;
+    }
+    .flow-name { font-size: 11px; font-weight: 700; color: var(--text); }
+    .flow-arrow {
+      font-size: 14px; color: var(--muted); flex-shrink: 0;
+      margin-bottom: 18px; /* align with dot center */
+    }
+
+    /* ── Step cards ── */
+    .step-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--r); overflow: hidden;
+    }
+    .step-head {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px 13px;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-badge {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; color: #fff;
+    }
+    .step-head-text { flex: 1; }
+    .step-head-title { font-size: 14px; font-weight: 700; }
+    .step-head-tag {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 99px; margin-top: 3px;
+    }
+    .step-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* ── Detail rows ── */
+    .detail { display: flex; gap: 10px; align-items: flex-start; }
+    .detail-icon {
+      width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; margin-top: 1px;
+    }
+    .detail-text { flex: 1; font-size: 13px; color: var(--sub); line-height: 1.65; }
+    .detail-text strong { color: var(--text); font-weight: 700; }
+
+    /* ── Alert box ── */
+    .alert {
+      border-radius: var(--r-sm); padding: 10px 12px;
+      font-size: 12px; line-height: 1.6; display: flex; gap: 8px; align-items: flex-start;
+    }
+    .alert-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+    .alert-text { color: var(--sub); }
+    .alert-text strong { color: var(--text); }
+
+    /* ── Note card ── */
+    .note-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .note-row { display: flex; gap: 10px; align-items: flex-start; }
+    .note-q {
+      flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%;
+      background: var(--blue-bg); color: var(--blue);
+      font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; margin-top: 1px;
+    }
+    .note-content { flex: 1; }
+    .note-q-text { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+    .note-a-text { font-size: 12px; color: var(--sub); line-height: 1.65; }
+    .note-divider { border: none; border-top: 1px solid var(--border); }
+
+    /* ── Footer ── */
+    .footer { text-align: center; padding: 24px 16px 0; font-size: 11px; color: var(--muted); }
+
+    /* Colors */
+    .c-green  { color: var(--green); }
+    .c-red    { color: var(--red); }
+    .c-amber  { color: var(--amber); }
+    .c-blue   { color: var(--blue); }
+    .bg-green-light  { background: var(--green-bg); }
+    .bg-red-light    { background: var(--red-bg); }
+    .bg-amber-light  { background: var(--amber-bg); }
+    .bg-blue-light   { background: var(--blue-bg); }
+    .bd-green  { border: 1px solid var(--green-bd); }
+    .bd-red    { border: 1px solid var(--red-bd); }
+    .bd-amber  { border: 1px solid var(--amber-bd); }
+    .bd-blue   { border: 1px solid var(--blue-bd); }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-icon">勤</div>
+  <div>
+    <div class="topbar-label">勤怠管理アプリ</div>
+    <div class="topbar-sub">操作マニュアル</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- 基本の流れ -->
+  <div>
+    <div class="sec-label">基本の流れ</div>
+    <div class="flow-card">
+      <div class="flow-title">1日の打刻は4ステップ</div>
+      <div class="flow-row">
+        <div class="flow-item">
+          <div class="flow-dot" style="background:var(--green);">→</div>
+          <div class="flow-name">出勤</div>
+        </div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-item">
+          <div class="flow-dot" style="background:var(--amber);">||</div>
+          <div class="flow-name">休憩開始</div>
+        </div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-item">
+          <div class="flow-dot" style="background:var(--purple);">▶</div>
+          <div class="flow-name">休憩終了</div>
+        </div>
+        <div class="flow-arrow">›</div>
+        <div class="flow-item">
+          <div class="flow-dot" style="background:var(--red);">←</div>
+          <div class="flow-name">退勤</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 1: 名前選択 -->
+  <div class="step-card">
+    <div class="step-head">
+      <div class="step-badge" style="background:var(--blue);">1</div>
+      <div class="step-head-text">
+        <div class="step-head-title">名前を選ぶ</div>
+        <span class="step-head-tag bg-blue-light c-blue bd-blue">最初にやること</span>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="detail">
+        <div class="detail-icon bg-blue-light c-blue">▼</div>
+        <div class="detail-text">画面上部のプルダウンから<strong>自分の名前</strong>を選んでください。名前を選ぶと出勤ボタンが有効になります。</div>
+      </div>
+      <div class="detail">
+        <div class="detail-icon bg-blue-light c-blue">★</div>
+        <div class="detail-text">2回目以降は<strong>前回選んだ名前が自動で選択</strong>されています。確認してそのままボタンを押せばOKです。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: 出勤 -->
+  <div class="step-card">
+    <div class="step-head">
+      <div class="step-badge" style="background:var(--green);">2</div>
+      <div class="step-head-text">
+        <div class="step-head-title">出勤する</div>
+        <span class="step-head-tag bg-green-light c-green bd-green">緑のボタン</span>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="detail">
+        <div class="detail-icon bg-green-light c-green">→</div>
+        <div class="detail-text">「<strong>出勤</strong>」ボタンを押すと確認画面が表示されます。自分の名前が正しいか確認してから「出勤する」を押してください。</div>
+      </div>
+      <div class="detail">
+        <div class="detail-icon bg-green-light c-green">🔒</div>
+        <div class="detail-text">出勤後は<strong>名前の変更ができなくなります</strong>。間違えた場合は当日中に担当者へ連絡してください。</div>
+      </div>
+      <div class="alert bg-green-light bd-green">
+        <div class="alert-icon">📍</div>
+        <div class="alert-text">出勤時のみ、現在地情報が自動で取得・送信されます。位置情報の許可を求める画面が出たら「許可」を選んでください。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: 休憩 -->
+  <div class="step-card">
+    <div class="step-head">
+      <div class="step-badge" style="background:var(--amber);">3</div>
+      <div class="step-head-text">
+        <div class="step-head-title">休憩する</div>
+        <span class="step-head-tag bg-amber-light c-amber bd-amber">白いボタン 2つ</span>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="detail">
+        <div class="detail-icon bg-amber-light c-amber">||</div>
+        <div class="detail-text">休憩に入るとき → 「<strong>休憩開始</strong>」を押す</div>
+      </div>
+      <div class="detail">
+        <div class="detail-icon" style="background:#F5F3FF;color:var(--purple);">▶</div>
+        <div class="detail-text">休憩から戻ったとき → 「<strong>休憩終了</strong>」を押す</div>
+      </div>
+      <div class="alert bg-amber-light bd-amber">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-text">休憩は<strong>1回のみ</strong>記録できます。押し忘れた場合は担当者へ連絡してください。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: 退勤 -->
+  <div class="step-card">
+    <div class="step-head">
+      <div class="step-badge" style="background:var(--red);">4</div>
+      <div class="step-head-text">
+        <div class="step-head-title">退勤する</div>
+        <span class="step-head-tag bg-red-light c-red bd-red">赤いボタン</span>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="detail">
+        <div class="detail-icon bg-red-light c-red">←</div>
+        <div class="detail-text">「<strong>退勤</strong>」ボタンを押すと確認画面が表示されます。時刻を確認してから「退勤する」を押してください。</div>
+      </div>
+      <div class="detail">
+        <div class="detail-icon bg-red-light c-red">↺</div>
+        <div class="detail-text">退勤後にデータが送信され、<strong>画面が自動でリセット</strong>されます。翌日もそのまま使えます。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 交通費・備考 -->
+  <div class="step-card">
+    <div class="step-head">
+      <div class="step-badge" style="background:var(--blue);">+</div>
+      <div class="step-head-text">
+        <div class="step-head-title">交通費・備考を送る</div>
+        <span class="step-head-tag bg-blue-light c-blue bd-blue">いつでも送信可</span>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="detail">
+        <div class="detail-icon bg-blue-light c-blue">∨</div>
+        <div class="detail-text">「<strong>交通費・備考</strong>」をタップすると入力欄が開きます。</div>
+      </div>
+      <div class="detail">
+        <div class="detail-icon bg-blue-light c-blue">¥</div>
+        <div class="detail-text"><strong>行き・帰りの金額</strong>を入力してください。交通費がない日は「0」と入力します。</div>
+      </div>
+      <div class="detail">
+        <div class="detail-icon bg-blue-light c-blue">📎</div>
+        <div class="detail-text">領収書などの<strong>画像を3枚まで添付</strong>できます。送信時に自動で圧縮されます。</div>
+      </div>
+      <div class="detail">
+        <div class="detail-icon bg-blue-light c-blue">✉</div>
+        <div class="detail-text">入力後「<strong>交通費・メモだけ送信</strong>」ボタンを押すと送信完了です。退勤後でも送信できます。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- よくある質問 -->
+  <div>
+    <div class="sec-label">よくある質問</div>
+    <div class="note-card">
+
+      <div class="note-row">
+        <div class="note-q">Q</div>
+        <div class="note-content">
+          <div class="note-q-text">ボタンが押せない・グレーになっている</div>
+          <div class="note-a-text">まず名前が選択されているか確認してください。出勤前は退勤・休憩ボタンは押せません。前の操作が完了すると次のボタンが有効になります。</div>
+        </div>
+      </div>
+
+      <hr class="note-divider" />
+
+      <div class="note-row">
+        <div class="note-q">Q</div>
+        <div class="note-content">
+          <div class="note-q-text">出勤を押したのに画面が変わらない</div>
+          <div class="note-a-text">電波の弱い場所では送信に時間がかかることがあります。「出勤中」のバッジが表示されれば打刻は記録されています。</div>
+        </div>
+      </div>
+
+      <hr class="note-divider" />
+
+      <div class="note-row">
+        <div class="note-q">Q</div>
+        <div class="note-content">
+          <div class="note-q-text">間違えて別の名前で出勤してしまった</div>
+          <div class="note-a-text">出勤後は名前を変更できません。すぐに担当者へ連絡してください。</div>
+        </div>
+      </div>
+
+      <hr class="note-divider" />
+
+      <div class="note-row">
+        <div class="note-q">Q</div>
+        <div class="note-content">
+          <div class="note-q-text">翌日開いたら昨日のデータが残っている</div>
+          <div class="note-a-text">退勤ボタンを押さずにアプリを閉じた可能性があります。担当者へ連絡し、正しい時刻で処理してもらってください。</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">勤怠管理アプリ 操作マニュアル</div>
+
+</div>
+</body>
+</html>
