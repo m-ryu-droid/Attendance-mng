@@ -243,13 +243,14 @@ body {
 .sending-box { background: var(--card); border-radius: var(--r); padding: 2rem 2.5rem; text-align: center; font-size: 15px; font-weight: 600; }
 
 /* ── Manual modal ── */
+.manual-ov { align-items: flex-end; padding: 0; }
 .manual-modal {
-  background: var(--card); border-radius: 18px; width: 100%; max-width: 340px;
-  max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--card); border-radius: 18px 18px 0 0; width: 100%; max-width: 480px;
+  height: 88vh; display: flex; flex-direction: column; overflow: hidden;
 }
 .manual-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 18px 14px; border-bottom: 1px solid var(--border);
+  padding: 16px 18px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
 }
 .manual-title { font-size: 16px; font-weight: 700; }
 .manual-close {
@@ -257,14 +258,13 @@ body {
   background: var(--border); color: var(--sub); font-size: 13px;
   cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: inherit;
 }
-.manual-body { padding: 16px 18px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
-.manual-step { display: flex; gap: 12px; align-items: flex-start; }
-.manual-step-num {
-  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
-  color: #fff; font-size: 12px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center; margin-top: 1px;
+.manual-frame { flex: 1; border: none; width: 100%; }
+
+/* ── Fare date picker ── */
+.fare-date-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.fare-date-input {
+  width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: var(--r-sm);
+  font-size: 14px; color: var(--text); background: #fff; font-family: inherit;
+  transition: border-color .15s;
 }
-.manual-step-content { flex: 1; }
-.manual-step-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
-.manual-step-desc { font-size: 12px; color: var(--sub); line-height: 1.6; }
-.manual-divider { border: none; border-top: 1px dashed var(--border); margin: 2px 0; }
+.fare-date-input:focus { outline: none; border-color: var(--blue); }
