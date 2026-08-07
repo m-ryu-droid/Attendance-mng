@@ -77,6 +77,10 @@
       <div class="acc-chevron">&#8964;</div>
     </div>
     <div class="acc-body">
+      <div class="fare-date-row">
+        <div class="fare-lbl" data-i18n="fareDate">対象日</div>
+        <input class="fare-date-input" id="fare-date" type="date" />
+      </div>
       <div class="fare-row">
         <div class="fare-field">
           <div class="fare-lbl" data-i18n="fareGo">行き (円)</div>
@@ -164,54 +168,18 @@
 <div class="toast" id="toast"></div>
 
 <!-- マニュアルモーダル -->
-<div class="modal-ov" id="modal-manual" onclick="closeManual(event)">
+<div class="modal-ov manual-ov" id="modal-manual" onclick="closeManual(event)">
   <div class="manual-modal">
     <div class="manual-header">
       <div class="manual-title">操作マニュアル</div>
       <button class="manual-close" onclick="closeManual()">✕</button>
     </div>
-    <div class="manual-body">
-      <div class="manual-step">
-        <div class="manual-step-num" style="background:var(--green);">1</div>
-        <div class="manual-step-content">
-          <div class="manual-step-title">名前を選択する</div>
-          <div class="manual-step-desc">画面上部のプルダウンから自分の名前を選んでください。出勤ボタンが有効になります。</div>
-        </div>
-      </div>
-      <div class="manual-step">
-        <div class="manual-step-num" style="background:var(--green);">2</div>
-        <div class="manual-step-content">
-          <div class="manual-step-title">出勤ボタンを押す</div>
-          <div class="manual-step-desc">確認画面で名前を確認してから「出勤する」を押してください。出勤後は名前の変更ができなくなります。</div>
-        </div>
-      </div>
-      <div class="manual-step">
-        <div class="manual-step-num" style="background:#D97706;">3</div>
-        <div class="manual-step-content">
-          <div class="manual-step-title">休憩開始 / 休憩終了</div>
-          <div class="manual-step-desc">休憩に入るときは「休憩開始」、戻ったら「休憩終了」を押してください。</div>
-        </div>
-      </div>
-      <div class="manual-step">
-        <div class="manual-step-num" style="background:var(--red);">4</div>
-        <div class="manual-step-content">
-          <div class="manual-step-title">退勤ボタンを押す</div>
-          <div class="manual-step-desc">確認画面で時刻を確認してから「退勤する」を押してください。データが送信され、画面がリセットされます。</div>
-        </div>
-      </div>
-      <div class="manual-divider"></div>
-      <div class="manual-step">
-        <div class="manual-step-num" style="background:var(--blue);">+</div>
-        <div class="manual-step-content">
-          <div class="manual-step-title">交通費・備考の送信</div>
-          <div class="manual-step-desc">「交通費・備考」を開いて行き・帰りの金額を入力し「交通費・メモだけ送信」を押してください。退勤後でも送信できます。領収書などの画像も添付できます（3枚まで）。</div>
-        </div>
-      </div>
-    </div>
+    <iframe class="manual-frame" src="manual.html" title="操作マニュアル"></iframe>
   </div>
 </div>
 
 <script src="script.js"></script>
 <script src="manual.js"></script>
+<script src="fare-date.js"></script>
 </body>
 </html>
