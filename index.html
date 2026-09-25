@@ -22,6 +22,15 @@
     </div>
   </div>
 
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-btn-punch" onclick="switchTab('punch')">打刻</button>
+    <button class="tab-btn" id="tab-btn-history" onclick="switchTab('history')">今月の勤怠</button>
+  </div>
+
+  <!-- ══════════ 打刻タブ ══════════ -->
+  <div class="tab-panel active" id="tab-punch">
+
   <!-- Name card with inline status badge -->
   <div class="name-card">
     <div class="name-head">
@@ -130,6 +139,89 @@
     </div>
   </div>
 
+  </div><!-- /tab-punch -->
+
+  <!-- ══════════ 今月の勤怠タブ ══════════ -->
+  <div class="tab-panel" id="tab-history">
+
+    <!-- 名前未選択 -->
+    <div class="hist-msg" id="hist-noname">
+      <div class="hist-msg-ico">&#128100;</div>
+      <div class="hist-msg-ttl">名前を選択してください</div>
+      <div class="hist-msg-txt">「打刻」タブでご自身の名前を選ぶと、今月の勤怠を表示できます。</div>
+    </div>
+
+    <!-- 暗証番号入力 -->
+    <div class="hist-gate" id="hist-gate">
+      <div class="hist-msg-ico">&#128274;</div>
+      <div class="hist-msg-ttl">今月の勤怠を表示します</div>
+      <div class="hist-msg-txt">ご自身の暗証番号を入力してください。</div>
+      <div class="gate-name" id="gate-name">—</div>
+      <input class="pin-inp" id="pin-inp" type="tel" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off" />
+      <div class="gate-err" id="gate-err"></div>
+      <button class="gate-btn" id="gate-btn" disabled>確認する</button>
+      <div class="gate-note">暗証番号が分からない場合は管理者にお問い合わせください。</div>
+    </div>
+
+    <!-- 読み込み中 -->
+    <div class="hist-loading" id="hist-loading">読み込み中...</div>
+
+    <!-- 本体 -->
+    <div id="hist-main">
+      <div class="hist-head">
+        <div>
+          <div class="hist-month" id="hist-month">—</div>
+          <div class="hist-name" id="hist-name">—</div>
+        </div>
+        <button class="lock-btn" id="lock-btn">ロック</button>
+      </div>
+
+      <div class="sum-grid">
+        <div class="sum-card">
+          <div class="sum-lbl">出勤日数</div>
+          <div class="sum-val" id="s-days">0<span class="unit">日</span></div>
+          <div class="sum-sub">今月の稼働</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-lbl">勤務時間</div>
+          <div class="sum-val" id="s-hours">0<span class="unit">h</span></div>
+          <div class="sum-sub">休憩を除く</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-lbl">残業</div>
+          <div class="sum-val" id="s-ot">0<span class="unit">h</span></div>
+          <div class="sum-sub">8時間超の分</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-lbl">深夜</div>
+          <div class="sum-val" id="s-nt">0<span class="unit">h</span></div>
+          <div class="sum-sub">22時〜5時</div>
+        </div>
+      </div>
+
+      <div class="hist-alert" id="fare-alert">
+        <div class="alert-ico">!</div>
+        <div>
+          <div class="alert-ttl">交通費が未入力の日があります</div>
+          <div class="alert-txt" id="fare-alert-txt"></div>
+        </div>
+      </div>
+
+      <div class="list-card">
+        <div class="list-head">
+          <div class="list-ttl">日別の記録</div>
+          <div class="list-cnt" id="list-cnt">0件</div>
+        </div>
+        <div id="day-list"></div>
+      </div>
+
+      <div class="hist-note">
+        記録はスプレッドシートの内容を表示しています。内容に誤りがある場合は管理者にご連絡ください。
+      </div>
+    </div>
+
+  </div><!-- /tab-history -->
+
 </div><!-- /app -->
 
 <!-- 出勤確認モーダル -->
@@ -181,5 +273,6 @@
 <script src="script.js"></script>
 <script src="manual.js"></script>
 <script src="fare-date.js"></script>
+<script src="history.js"></script>
 </body>
 </html>
