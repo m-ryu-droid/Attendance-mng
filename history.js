@@ -158,15 +158,18 @@ function histRender(res, now) {
   document.getElementById('list-cnt').textContent = rows.length + '件';
 
   // 交通費の未入力（確定した日だけを対象にする）
-  const noFare = rows.filter(r => r.status === 'done' && r.fare === null);
+  const noFare = rows.filter(histNoFare);
   const alertEl = document.getElementById('fare-alert');
   if (noFare.length) {
     alertEl.classList.remove('hist-hide');
     document.getElementById('fare-alert-txt').textContent =
-      noFare.map(r => histMd(r.date)).join('、') + ' の交通費がまだ送信されていません。';
+      noFare.map(r => histMd(r.date)).join('、') + ' の交通費が未入力です。日付をタップすると入力できます。';
   } else {
     alertEl.classList.add('hist-hide');
   }
+
+  // 打刻タブの「未入力の日」と同じデータを使う
+  if (typeof fmApplyRows === 'function') fmApplyRows(histName, rows);
 
   const list = document.getElementById('day-list');
   if (!rows.length) {
@@ -193,7 +196,7 @@ function histDayHtml(r) {
   if (r.overtime > 0) tags.push('<span class="tag ot">残業 ' + histH(r.overtime) + 'h</span>');
   if (r.night > 0)    tags.push('<span class="tag nt">深夜 ' + histH(r.night) + 'h</span>');
   if (r.breakstart && r.breakend) tags.push('<span class="tag br">休憩あり</span>');
-  if (done && r.fare === null) tags.push('<span class="tag no-fare">交通費なし</span>');
+  if (histNoFare(r)) tags.push('<span class="tag no-fare">交通費未入力</span>');
 
   const det = [];
   if (!done) {
@@ -212,9 +215,13 @@ function histDayHtml(r) {
     if (!r.breakstart && !r.breakend) det.push(histRow('#D97706', '休憩', '<span class="det-v na">なし</span>', true));
     det.push(histRow('var(--red)', '退勤', histNx(r.checkout, r.checkin)));
     if (r.night > 0) det.push(histRow('#7C3AED', '深夜時間', histH(r.night) + ' h'));
+    const noFare = histNoFare(r);
     det.push(histRow('var(--blue)', '交通費',
-      r.fare === null ? '<span class="det-v warn">未入力</span>' : histYen(r.fare) + '円',
-      r.fare === null));
+      noFare ? '<span class="det-v warn">未入力</span>' : histYen(r.fare) + '円',
+      noFare));
+    if (noFare) {
+      det.push('<button class="hist-fare-btn" onclick="fmGoEnter(\'' + r.date + '\')">この日の交通費を入力する</button>');
+    }
   }
 
   const timeTxt = done
@@ -246,6 +253,12 @@ function histRow(color, label, value, raw) {
 }
 
 /* ── ヘルパー ── */
+
+/* 退勤済みで、交通費が空欄または0円の日を「未入力」とみなす（空欄だとシートには0が入るため） */
+function histNoFare(r) {
+  return r.status === 'done' && !(Number(r.fare) > 0);
+}
+
 function histH(v) {
   const n = Number(v);
   if (!isFinite(n) || n === 0) return '0';

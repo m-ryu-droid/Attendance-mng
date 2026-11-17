@@ -10,8 +10,11 @@ function initFareDate() {
   const el = document.getElementById('fare-date');
   if (!el) return;
   const today = new Date();
-  const min = new Date(today);
-  min.setDate(min.getDate() - FARE_DATE_PAST_DAYS);
+  // 今月の1日、または7日前のうち早い方まで選べる（月初でも直近の未入力日を選べるように）
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - FARE_DATE_PAST_DAYS);
+  const min = monthStart < weekAgo ? monthStart : weekAgo;
   el.max = toInputDate(today);
   el.min = toInputDate(min);
   el.value = toInputDate(today);
@@ -56,6 +59,9 @@ sendToGAS = async function(type, location, checkoutExtras) {
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload)
   });
+
+  // 送信が成功したときだけ、未入力リスト（fare-missing.js）に知らせる
+  if (typeof fmOnFareSent === 'function') fmOnFareSent(payload.date, extras);
 };
 
 document.addEventListener('DOMContentLoaded', initFareDate);

@@ -62,30 +62,29 @@
     </button>
   </div>
 
-  <!-- Break buttons (休憩開始 / 休憩終了) -->
-  <div class="break-btns">
-    <button class="break-btn" id="btn-bs" disabled onclick="record('休憩開始')">
-      <div class="break-dot" style="background:#D97706;"></div>
-      <div class="break-lbl" data-i18n="breakStart">休憩開始</div>
-      <div class="break-time" id="time-bs">--:--</div>
-    </button>
-    <button class="break-btn" id="btn-be" disabled onclick="record('休憩終了')">
-      <div class="break-dot" style="background:#7C3AED;"></div>
-      <div class="break-lbl" data-i18n="breakEnd">休憩終了</div>
-      <div class="break-time" id="time-be">--:--</div>
-    </button>
-  </div>
+  <!-- Break button (休憩する → 休憩を終わる → 休憩済み。punch-ui.js が状態を切り替える) -->
+  <button class="brk-btn" id="btn-brk" disabled onclick="punchBreakTap()">
+    <div class="brk-dot"></div>
+    <div class="brk-main">
+      <div class="brk-t" id="brk-t">休憩する</div>
+      <div class="brk-s" id="brk-s">出勤後に押せます</div>
+    </div>
+    <div class="brk-go" id="brk-go">&rsaquo;</div>
+  </button>
 
   <!-- Commute accordion -->
   <div class="commute-card" id="commute-card">
     <div class="acc-head" onclick="toggleAcc()">
       <div class="acc-left">
         <div class="section-title" data-i18n="commuteTitle">交通費・備考</div>
+        <span class="fare-pill" id="fare-pill" hidden></span>
         <div class="section-sub" data-i18n="commuteSubtitle">退勤後も送信できます</div>
       </div>
       <div class="acc-chevron">&#8964;</div>
     </div>
     <div class="acc-body">
+      <!-- 未入力の日（fare-missing.js が描画。暗証番号が未入力の端末では案内だけ出す） -->
+      <div class="miss-box" id="miss-box" hidden></div>
       <div class="fare-date-row">
         <div class="fare-lbl" data-i18n="fareDate">対象日</div>
         <input class="fare-date-input" id="fare-date" type="date" />
@@ -113,29 +112,6 @@
       <button class="supp-btn" id="supp-btn" disabled onclick="sendSupplementalInfo()">
         <span data-i18n="supplementalSend">交通費・メモだけ送信</span>
       </button>
-    </div>
-  </div>
-
-  <!-- Today's status -->
-  <div class="status-card">
-    <div class="status-title" data-i18n="todayStatus">本日の打刻状況</div>
-    <div class="status-rows">
-      <div class="status-row">
-        <div class="status-left"><div class="s-dot" style="background:var(--green)"></div><span data-i18n="checkin">出勤</span></div>
-        <div class="status-val" id="s-ci">—</div>
-      </div>
-      <div class="status-row">
-        <div class="status-left"><div class="s-dot" style="background:#D97706"></div><span data-i18n="breakStart">休憩開始</span></div>
-        <div class="status-val" id="s-bs">—</div>
-      </div>
-      <div class="status-row">
-        <div class="status-left"><div class="s-dot" style="background:#7C3AED"></div><span data-i18n="breakEnd">休憩終了</span></div>
-        <div class="status-val" id="s-be">—</div>
-      </div>
-      <div class="status-row">
-        <div class="status-left"><div class="s-dot" style="background:var(--red)"></div><span data-i18n="checkout">退勤</span></div>
-        <div class="status-val" id="s-co">—</div>
-      </div>
     </div>
   </div>
 
@@ -239,16 +215,17 @@
   </div>
 </div>
 
-<!-- 退勤確認モーダル -->
+<!-- 退勤確認モーダル（中身は punch-ui.js が交通費の入力状況に合わせて組み立てる） -->
 <div class="modal-ov" id="modal">
   <div class="modal">
     <div class="modal-ttl" data-i18n="modalTitle">退勤しますか？</div>
-    <div class="modal-body" data-i18n="modalBody">退勤を記録するとデータがリセットされます。よろしいですか？</div>
     <div class="modal-time" id="modal-time"></div>
-    <div class="modal-btns">
-      <button class="modal-cancel" onclick="closeModal()" data-i18n="cancel">キャンセル</button>
-      <button class="modal-confirm" onclick="doCheckout()" data-i18n="confirm">退勤する</button>
+    <div class="modal-sum" id="modal-sum"></div>
+    <div class="co-warn" id="co-warn" hidden>
+      <div class="co-warn-t" id="co-warn-t"></div>
+      <div class="co-warn-s" id="co-warn-s"></div>
     </div>
+    <div class="co-btns" id="co-btns"></div>
   </div>
 </div>
 
@@ -274,5 +251,7 @@
 <script src="manual.js"></script>
 <script src="fare-date.js"></script>
 <script src="history.js"></script>
+<script src="fare-missing.js"></script>
+<script src="punch-ui.js"></script>
 </body>
 </html>
